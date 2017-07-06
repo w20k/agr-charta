@@ -12,55 +12,72 @@ module Charta
       "<Geometry(#{@ewkt})>"
     end
 
+    # return a valid representation of an invalid geometry
     def geom
       "ST_MakeValid(ST_GeomFromEWKT('#{@ewkt}'))"
     end
 
+    #  Returns the type of the geometry as a string
     def type
-      select_value("SELECT GeometryType(#{geom})").to_s.strip
+      feature.geometry_type.class.name.split('::').last.underscore.upcase
+      # select_value("SELECT GeometryType(#{geom})").to_s.strip
     end
 
+    # Returns the type of the geometry as a string. EG: 'ST_Linestring', 'ST_Polygon',
+    # 'ST_MultiPolygon' etc. This function differs from GeometryType(geometry)
+    # in the case of the string and ST in front that is returned, as well as the fact
+    # that it will not indicate whether the geometry is measured.
     def collection?
       select_value("SELECT ST_GeometryType(#{geom})") =~ /\AST_GeometryCollection\z/
     end
 
+    # Return the spatial reference identifier for the ST_Geometry
     def srid
       select_value("SELECT ST_SRID(#{geom})").to_i
     end
 
+    # Return the Well-Known Text (WKT) representation of the geometry with SRID meta data.
     def srid=(srid)
       @ewkt = select_value("SELECT ST_AsEWKT(ST_SetSRID(#{geom}, #{srid}))")
     end
 
+    # WHY ???
     def to_rgeo
       to_ewkt
     end
 
+    #  Return the Well-Known Text (WKT) representation of the geometry/geography without SRID metadata
     def to_text
       select_value("SELECT ST_AsText(#{geom})")
     end
     alias as_text to_text
 
+    # POurquoi 2 methodes ?
     def to_ewkt
       @ewkt.to_s
     end
 
+    # POurquoi 2 methodes ?
     def to_s
       @ewkt.to_s
     end
 
+    #  Return the Well-Known Binary (WKB) representation of the geometry with SRID meta data.
     def to_binary
       select_value("SELECT ST_AsEWKB(#{geom})")
     end
 
+    # Return the geometry as a Geography Markup Language (GML) element
     def to_gml
       select_value("SELECT ST_AsGML(#{geom})")
     end
 
+    # Takes as input KML representation of geometry and outputs a PostGIS geometry object
     def to_kml
       select_value("SELECT ST_AsKML(#{geom})")
     end
 
+    # Pas bien compris le fonctionnement
     def to_svg(options = {})
       svg = '<svg xmlns="http://www.w3.org/2000/svg" version="1.1"'
       { preserve_aspect_ratio: 'xMidYMid meet', width: 180, height: 180, view_box: bounding_box.svg_view_box.join(' ') }.merge(options).each do |attr, value|
@@ -70,11 +87,13 @@ module Charta
       svg
     end
 
+    # Return the geometry as Scalar Vector Graphics (SVG) path data.
     def to_svg_path
       select_value("SELECT ST_AsSVG(#{geom})")
     end
 
     def to_geojson(feature_collection = false)
+      # Return the geometry as a Geometry Javascript Object Notation (GeoJSON) element.
       json = select_value("SELECT ST_AsGeoJSON(#{geom})")
 
       if feature_collection && !collection?.nil?
@@ -90,6 +109,7 @@ module Charta
     end
     alias to_json to_geojson
 
+    # return object in json
     def to_json_object(feature_collection = false)
       JSON.parse(to_json(feature_collection))
     end
@@ -116,6 +136,7 @@ module Charta
 
     # Returns area in square meter
     def area
+      # Remove Preference, or put it in option
       srid = find_srid(Preference[:map_measure_srs])
       value = if srid && srid != 4326
                 select_value("SELECT ST_Area(ST_Transform(#{geom}, #{srid}))")
@@ -125,15 +146,18 @@ module Charta
       (value.blank? ? 0.0 : value.to_d).in_square_meter
     end
 
+    # Returns true if this Geometry is an empty geometrycollection, polygon, point etc.
     def empty?
       select_value("SELECT ST_IsEmpty(#{geom})") =~ /\At(rue)?\z/
     end
     alias blank? empty?
 
+    # Computes the geometric center of a geometry, or equivalently, the center of mass of the geometry as a POINT.
     def centroid
       select_row("SELECT ST_Y(ST_Centroid(#{geom})), ST_X(ST_Centroid(#{geom}))").map(&:to_f)
     end
 
+    # Returns a POINT guaranteed to lie on the surface.
     def point_on_surface
       select_row("SELECT ST_Y(ST_PointOnSurface(#{geom})), ST_X(ST_PointOnSurface(#{geom}))").map(&:to_f)
     end
@@ -147,6 +171,16 @@ module Charta
       self.class.new(select_value("SELECT ST_AsEWKT(ST_Force2D(#{geom}))"))
     end
 
+    # ST_AsEWKT = Return the Well-Known Text (WKT) representation of the geometry with SRID meta data.
+    # ST_Multi = Returns the geometry as a MULTI* geometry. If the geometry is already a MULTI*, it is returned unchanged.
+    # ST_CollectionExtract = Given a (multi)geometry, returns a (multi)geometry
+      # consisting only of elements of the specified type. Sub-geometries that
+      # are not the specified type are ignored. If there are no sub-geometries
+      # of the right type, an EMPTY geometry will be returned. Only points, lines
+      # and polygons are supported. Type numbers are 1 == POINT, 2 == LINESTRING, 3 == POLYGON.
+    # ST_CollectionHomogenize = Given a geometry collection, returns the "simplest"
+      # representation of the contents. Singletons will be returned as singletons.
+      # Collections that are homogeneous will be returned as the appropriate multi-type.
     def multi_polygon
       Charta.new_geometry select_value("SELECT ST_AsEWKT(ST_Multi(ST_CollectionExtract(ST_CollectionHomogenize(ST_Multi(#{geom})), 3)))")
     end
@@ -228,5 +262,27 @@ module Charta
     def find_srid(name_or_srid)
       Charta.find_srid(name_or_srid)
     end
+
+    def feature
+      self.class.feature(@ewkt)
+    end
+
+    class << self
+      def factory
+        RGeo::Geos.factory(
+          srid: 4326,
+          wkt_generator: { type_format: :ewkt, emit_ewkt_srid: true, convert_case: :upper },
+          wkt_parser: { support_ewkt: true },
+          wkb_generator:  { type_format: :ewkb, emit_ewkb_srid: true, hex_format: true },
+          wkb_parser: { support_ewkb: true }
+        )
+      end
+
+      def feature(ewkt)
+        # parser = RGeo::WKRep::WKTParser.new(factory, support_ewkt: true)
+        factory.parse_wkt(ewkt)
+      end
+    end
   end
+
 end

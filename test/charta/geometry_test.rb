@@ -31,6 +31,11 @@ module Charta
       assert Charta.empty_geometry.empty?
     end
 
+    def test_type
+      geo = Charta.new_geometry({ type: "Feature", geometry: { type: "Point", coordinates: [102.0, 0.5]}, properties: { prop0: "value0" } })
+      assert_equal 'blabla', geo.type
+    end
+
     def test_different_GeoJSON_input_formats
       samples = []
       samples << {

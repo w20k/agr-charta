@@ -20,7 +20,7 @@ module Charta
     WGS84: 4326,
     RGF93: 2143
   }
-  
+
   class << self
     def new_geometry(coordinates, srs = nil, format = nil, flatten_collection = true, options = {})
       geom_ewkt = nil
@@ -40,7 +40,7 @@ module Charta
                       else
                         # select_value("SELECT ST_AsEWKT(ST_GeomFromEWKB(E'\\\\x#{coordinates}'))")
                         # parser = RGeo::WKRep::WKBParser.new(factory, support_ewkb: true)
-                        generate_ewkt factory.parse_wkb(coordinates)
+                        generate_ewkt Geometry.factory.parse_wkb(coordinates)
                       end
                     elsif format == 'gml' && ::Charta::GML.valid?(coordinates)
                       # required format 'cause kml geometries return empty instead of failing
@@ -48,13 +48,13 @@ module Charta
                     elsif format == 'kml' && ::Charta::KML.valid?(coordinates)
                       ::Charta::KML.new(coordinates).to_ewkt
                     else # WKT expected
-                      byebug
+                      # byebug
                       if srs && srid = find_srid(srs)
                         # select_value("SELECT ST_AsEWKT(ST_GeomFromText('#{coordinates}', #{srid}))")
                         generate_ewkt RGeo::Geos.factory(srid: srid).parse_wkt(coordinates)
                       else
                         # select_value("SELECT ST_AsEWKT(ST_GeomFromEWKT('#{coordinates}'))")
-                        generate_ewkt feature(coordinates)
+                        generate_ewkt Geometry.feature(coordinates)
                       end
                     end
       else
@@ -101,6 +101,7 @@ module Charta
 
     # Execute a query
     def select_value(query)
+      # byebug
       raise "No more ActiveRecord::Base.connection.select_value(query)"
     end
 
@@ -113,26 +114,11 @@ module Charta
       raise "No more ActiveRecord::Base.connection.select_rows(query).first"
     end
 
-    def factory
-      RGeo::Geos.factory(
-        srid: 4326,
-        wkt_generator: { type_format: :ewkt, emit_ewkt_srid: true, convert_case: :upper },
-        wkt_parser: { support_ewkt: true },
-        wkb_generator:  { type_format: :ewkb, emit_ewkb_srid: true, hex_format: true },
-        wkb_parser: { support_ewkb: true }
-      )
-    end
-
-    def feature(ewkt)
-      # parser = RGeo::WKRep::WKTParser.new(factory, support_ewkt: true)
-      factory.parse_wkt(ewkt)
-    end
-
     def generate_ewkt(feature)
       generator = RGeo::WKRep::WKTGenerator.new(tag_format: :ewkt, emit_ewkt_srid: true)
       generator.generate(feature)
     end
-    
+
     def parse_ewkt(coordinates)
       # parser = RGeo::WKRep::WKTParser.new(factory, support_ewkt: true)
       # factory.parse_wkt(coordinates)
@@ -151,8 +137,8 @@ module Charta
       nil
     end
 
-    
-    
+
+
     # Check and returns the SRID matching with srname or SRID.
     def find_srid(srname_or_srid)
       if srname_or_srid.to_s =~ /\Aurn:ogc:def:crs:.*\z/
