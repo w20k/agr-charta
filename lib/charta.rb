@@ -102,7 +102,6 @@ module Charta
 
     # Execute a query
     def select_value(query)
-      # byebug
       raise "No more ActiveRecord::Base.connection.select_value(query)"
     end
 
