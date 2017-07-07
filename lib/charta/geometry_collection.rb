@@ -9,7 +9,7 @@ module Charta
 
     # Homogenize data if it's a GeometryCollection
     def homogenize!
-      @ewkt = select_value("SELECT ST_AsEWKT(ST_Multi(ST_CollectionHomogenize(#{geom})))")
+      # @ewkt = select_value("SELECT ST_AsEWKT(ST_Multi(ST_CollectionHomogenize(#{geom})))")
     end
 
     def self.empty(srid = nil)

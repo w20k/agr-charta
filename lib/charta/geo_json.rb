@@ -85,7 +85,7 @@ module Charta
 
       def object_to_ewkt(hash)
         type = hash[:type] || hash['type']
-        send("self.#{type.gsub(/(.)([A-Z])/, '\1_\2').downcase}_to_ewkt", hash)
+        send("#{type.gsub(/(.)([A-Z])/, '\1_\2').downcase}_to_ewkt", hash)
       end
 
       def feature_collection_to_ewkt(hash)

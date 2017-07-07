@@ -11,6 +11,7 @@ require 'charta/bounding_box'
 require 'charta/geo_json'
 require 'charta/gml'
 require 'charta/kml'
+require 'string'
 
 require 'byebug'
 
@@ -65,7 +66,7 @@ module Charta
         raise ArgumentError, "Invalid data: coordinates=#{coordinates.inspect}, srid=#{srid.inspect}"
       end
       # select_value("SELECT GeometryType(ST_GeomFromEWKT('#{geom_ewkt}'))").to_s.strip
-      type = feature(geom_ewkt).geometry_type
+      type = Geometry.feature(geom_ewkt).geometry_type
       puts type.inspect
       geom = case type
              when RGeo::Feature::Point then

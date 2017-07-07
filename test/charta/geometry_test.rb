@@ -32,8 +32,8 @@ module Charta
     end
 
     def test_type
-      geo = Charta.new_geometry({ type: "Feature", geometry: { type: "Point", coordinates: [102.0, 0.5]}, properties: { prop0: "value0" } })
-      assert_equal 'blabla', geo.type
+      geo = Charta.new_geometry('SRID=4326;MULTIPOLYGON(((7.40679681301117 48.1167274678089,7.40882456302643 48.1158768860692,7.40882456302643 48.1158679325024,7.40678608417511 48.1167220957579,7.40679681301117 48.1167274678089)))')
+      assert_equal 'MULTI_POLYGON', geo.type
     end
 
     def test_different_GeoJSON_input_formats

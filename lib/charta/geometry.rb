@@ -19,8 +19,7 @@ module Charta
 
     #  Returns the type of the geometry as a string
     def type
-      feature.geometry_type.class.name.split('::').last.underscore.upcase
-      # select_value("SELECT GeometryType(#{geom})").to_s.strip
+      feature.geometry_type.name.split('::').last.underscore.upcase
     end
 
     # Returns the type of the geometry as a string. EG: 'ST_Linestring', 'ST_Polygon',
@@ -267,6 +266,7 @@ module Charta
       self.class.feature(@ewkt)
     end
 
+
     class << self
       def factory
         RGeo::Geos.factory(
@@ -284,5 +284,4 @@ module Charta
       end
     end
   end
-
 end
