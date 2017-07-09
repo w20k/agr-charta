@@ -28,24 +28,24 @@ module Charta
     def valid?
       to_ewkt
       true
-    rescue
-      false
+      # rescue
+      #   false
     end
 
     class << self
       # Test is given data is a valid KML
       def valid?(data, srid = :WGS84)
         new(data, srid).valid?
-      rescue
-        false
+        # rescue
+        #   false
       end
 
       def object_to_ewkt(fragment)
-        send("#{fragment.name.snakecase}_to_ewkt", fragment)
+        send("#{fragment.name.underscore}_to_ewkt", fragment)
       end
 
       def document_to_ewkt(kml)
-        return 'GEOMETRYCOLLECTION EMPTY' if kml.css('Document').blank?
+        return 'GEOMETRYCOLLECTION EMPTY' if kml.css('Document').nil?
         'GEOMETRYCOLLECTION(' + kml.css('Placemark').collect do |placemark|
           TAGS.collect do |tag|
             next if placemark.css(tag).empty?
@@ -62,24 +62,24 @@ module Charta
       end
 
       def point_to_ewkt(kml)
-        return 'POINT EMPTY' if kml.css('coordinates').blank?
+        return 'POINT EMPTY' if kml.css('coordinates').nil?
         'POINT(' + kml.css('coordinates').collect { |coords| coords.content.split ',' }.flatten.join(' ') + ')'
       end
 
       def line_string_to_ewkt(kml)
-        return 'LINESTRING EMPTY' if kml.css('coordinates').blank?
+        return 'LINESTRING EMPTY' if kml.css('coordinates').nil?
 
-        'LINESTRING(' + kml.css('coordinates').collect { |coords| coords.content.split(/\r\n|\n| /) }.flatten.reject(&:empty?).collect { |c| c.split ',' }.collect { |dimension| %(#{dimension.first} #{dimension.second}) }.join(', ') + ')'
+        'LINESTRING(' + kml.css('coordinates').collect { |coords| coords.content.split(/\r\n|\n| /) }.flatten.reject(&:empty?).collect { |c| c.split ',' }.collect { |dimension| %(#{dimension.first} #{dimension[1]}) }.join(', ') + ')'
       end
 
       def polygon_to_ewkt(kml)
-        return 'POLYGON EMPTY' if kml.css('coordinates').blank?
+        return 'POLYGON EMPTY' if kml.css('coordinates').nil?
 
         'POLYGON(' + %w[outerBoundaryIs innerBoundaryIs].collect do |boundary|
           next if kml.css(boundary).empty?
 
           kml.css(boundary).collect do |hole|
-            '(' + hole.css('coordinates').collect { |coords| coords.content.split(/\r\n|\n| /) }.flatten.reject(&:empty?).collect { |c| c.split ',' }.collect { |dimension| %(#{dimension.first} #{dimension.second}) }.join(', ') + ')'
+            '(' + hole.css('coordinates').collect { |coords| coords.content.split(/\r\n|\n| /) }.flatten.reject(&:empty?).collect { |c| c.split ',' }.collect { |dimension| %(#{dimension.first} #{dimension[1]}) }.join(', ') + ')'
           end.join(', ')
         end.compact.join(', ') + ')'
       end

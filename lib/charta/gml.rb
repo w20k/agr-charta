@@ -58,20 +58,16 @@ module Charta
     def valid?
       to_ewkt
       true
-    rescue
-      false
     end
 
     class << self
       # Test is given data is a valid GML
       def valid?(data, srid = :WGS84)
         new(data, srid).valid?
-      rescue
-        false
       end
 
       def object_to_ewkt(fragment, srid)
-        send("#{fragment.name.snakecase}_to_ewkt", fragment, srid)
+        send("#{fragment.name.underscore}_to_ewkt", fragment, srid)
       end
 
       def document_to_ewkt(gml, srid)
@@ -97,7 +93,7 @@ module Charta
       alias geometry_collection_to_ewkt document_to_ewkt
 
       def transform(data, from_srid, to_srid)
-        Charta.select_value("SELECT ST_AsText(ST_Transform(ST_GeomFromText('#{data}', #{from_srid}),#{to_srid}))")
+        Charta.new_geometry(data, from_srid).transform(to_srid).to_text
       end
 
       def polygon_to_ewkt(gml, srid)
@@ -106,7 +102,7 @@ module Charta
         wkt = 'POLYGON(' + %w[outerBoundaryIs innerBoundaryIs].collect do |boundary|
           next if gml.css("#{GML_PREFIX}|#{boundary}").empty?
           gml.css("#{GML_PREFIX}|#{boundary}").collect do |hole|
-            '(' + hole.css("#{GML_PREFIX}|coordinates").collect { |coords| coords.content.split(/\r\n|\n| /) }.flatten.reject(&:empty?).collect { |c| c.split ',' }.collect { |dimension| %(#{dimension.first} #{dimension.second}) }.join(', ') + ')'
+            '(' + hole.css("#{GML_PREFIX}|coordinates").collect { |coords| coords.content.split(/\r\n|\n| /) }.flatten.reject(&:empty?).collect { |c| c.split ',' }.collect { |dimension| %(#{dimension.first} #{dimension[1]}) }.join(', ') + ')'
           end.join(', ')
         end.compact.join(', ') + ')'
 
@@ -131,7 +127,7 @@ module Charta
       def line_string_to_ewkt(gml, srid)
         return 'LINESTRING EMPTY' if gml.css("#{GML_PREFIX}|coordinates").nil?
 
-        wkt = 'LINESTRING(' + gml.css("#{GML_PREFIX}|coordinates").collect { |coords| coords.content.split(/\r\n|\n| /) }.flatten.reject(&:empty?).collect { |c| c.split ',' }.collect { |dimension| %(#{dimension.first} #{dimension.second}) }.join(', ') + ')'
+        wkt = 'LINESTRING(' + gml.css("#{GML_PREFIX}|coordinates").collect { |coords| coords.content.split(/\r\n|\n| /) }.flatten.reject(&:empty?).collect { |c| c.split ',' }.collect { |dimension| %(#{dimension.first} #{dimension[1]}) }.join(', ') + ')'
 
         unless gml['srsName'].nil? || Charta.find_srid(gml['srsName']).to_s == srid.to_s
           wkt = transform(wkt, Charta.find_srid(gml['srsName']), srid)

@@ -1,6 +1,7 @@
 module Charta
-  # Represent a Geometry with contains only polygons
+  # Represent a Geometry which contains points in a line string.
   class LineString < Geometry
+    # Browse each point
     def each_point(&block)
       if block.arity == 1
         points.each(&block)
@@ -12,8 +13,9 @@ module Charta
     end
 
     def points
-      @points ||= select_values("SELECT ST_AsEWKT(ST_PointN(#{geom}, generate_series(1, ST_NPoints(#{geom}))))").map do |point|
-        Point.new(point)
+      @points ||= feature.points.map do |point|
+        generator = RGeo::WKRep::WKTGenerator.new(tag_format: :ewkt, emit_ewkt_srid: true)
+        Point.new(generator.generate(point))
       end || []
     end
   end

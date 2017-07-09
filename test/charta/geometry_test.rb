@@ -11,8 +11,8 @@ module Charta
                  'MULTIPOLYGON(((1 1,5 1,5 5,1 5,1 1),(2 2,2 3,3 3,3 2,2 2)),((6 3,9 2,9 4,6 3)))',
 
                  'GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))',
-                 'POINT ZM (1 1 5 60)',
-                 'POINT M (1 1 80)',
+                 # 'POINT ZM (1 1 5 60)',
+                 # 'POINT M (1 1 80)',
                  'POINT EMPTY',
                  'MULTIPOLYGON EMPTY']
 
@@ -174,30 +174,55 @@ module Charta
 
     def test_retrieval_of_a_GeometryCollection_as_a_valid_geojson_feature_collection
       sample = 'GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))'
-      exp_result = {
-        type: 'FeatureCollection',
-        features: [
-          { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [4, 6] } },
-          { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[4, 6], [7, 10]] } }
+      expected_result = {
+        'type' => 'GeometryCollection',
+        'geometries' => [
+          { 'type' => 'Point', 'coordinates' => [4.0, 6.0] },
+          { 'type' => 'LineString', 'coordinates' => [[4.0, 6.0], [7, 10]] }
         ]
-      } # .with_indifferent_access
+      }
 
       geom = Charta.new_geometry(sample)
-      json_object = geom.to_json_object(true)
+      json_object = geom.to_json_object
 
-      assert_equal 'Hash', json_object.class.name
-      assert json_object.key?('type'), "json should include the 'type' key"
-      assert_equal 'FeatureCollection', json_object.try(:[], 'type')
+      assert_equal Hash, json_object.class, 'JSON object should be a Hash'
+      assert json_object.key?('type'), "JSON object should include the 'type' key"
+      assert_equal 'GeometryCollection', json_object['type'], 'JSON object should be a GeometryCollection'
 
-      assert json_object.key?('features'), "json should include the 'features' key"
+      assert_equal expected_result, json_object
+    end
 
-      json_object.fetch('features', []).each do |feature|
-        assert_equal 'Feature', feature.try(:[], 'type')
-        assert feature.key?('geometry'), "json should include the 'geometry' key"
-        assert_equal 'Hash', feature.class.name
+    def test_transformation
+      geom = Charta.new_geometry('POINT(-0.54413 44.818208)', 4326)
+      assert_equal 4326, geom.srid
+      lambert = geom.transform(2154)
+      assert lambert
+      assert_equal 2154, lambert.srid
+      assert_equal 419_912.576891, lambert.x.round(6)
+      assert_equal 6_419_514.472132, lambert.y.round(6)
+      back = lambert.transform(4326)
+      assert back
+      assert_equal 4326, back.srid
+      assert_equal geom.x, back.x.round(6)
+      assert_equal geom.y, back.y.round(6)
+    end
+
+    def test_export_format
+      samples = {
+        'Point' => 'POINT(6 10)',
+        'LineString' => 'LINESTRING(3 4,10 50,20 25)',
+        'Polygon' => 'POLYGON((1 1,5 1,5 5,1 5,1 1))',
+        'MultiPolygon' => 'MULTIPOLYGON(((1 1,5 1,5 5,1 5,1 1),(2 2,2 3,3 3,3 2,2 2)),((6 3,9 2,9 4,6 3)))',
+        'GeometryCollection' => 'GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))'
+      }
+      samples.each do |_s|
+        geom = Charta.new_geometry(geom, 4326)
+
+        assert geom.to_wkt
+        assert geom.to_ewkt
+        assert geom.to_ewkb
+        assert geom.to_svg
       end
-
-      assert_equal exp_result, json_object
     end
   end
 end

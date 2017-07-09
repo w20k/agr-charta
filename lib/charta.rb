@@ -15,32 +15,32 @@ require 'string'
 
 require 'byebug'
 
+unless RGeo::CoordSys::Proj4.supported?
+  puts "Proj4 is not supported. Some actions won't work"
+end
+
 # Charta aims to supply easy geom/geog tools
 module Charta
   SRS = {
     WGS84: 4326,
     RGF93: 2143
-  }
+  }.freeze
 
   class << self
-    def new_geometry(coordinates, srs = nil, format = nil, flatten_collection = true, options = {})
+    def new_geometry(coordinates, srs = nil, format = nil, _flatten_collection = true, _options = {})
       geom_ewkt = nil
       if coordinates.to_s =~ /\A[[:space:]]*\z/
         geom_ewkt = empty_geometry(srs).to_ewkt
       elsif coordinates.is_a?(::Charta::Geometry)
-        geom_ewkt = coordinates.ewkt
+        geom_ewkt = coordinates.to_ewkt
       elsif coordinates.is_a?(Hash) || (coordinates.is_a?(String) && ::Charta::GeoJSON.valid?(coordinates)) # GeoJSON
         srid = srs ? find_srid(srs) : :WGS84
-        # select_value("SELECT ST_AsEWKT(ST_GeomFromEWKT('#{::Charta::GeoJSON.new(coordinates, srid).to_ewkt}'))")
         geom_ewkt = ::Charta::GeoJSON.new(coordinates, srid).to_ewkt
       elsif coordinates.is_a?(String)
         geom_ewkt = if coordinates =~ /\A[A-F0-9]+\z/ # WKB
                       if srs && srid = find_srid(srs)
-                        # select_value("SELECT ST_AsEWKT(ST_GeomFromText(E'\\\\x#{coordinates}', #{srid}))")
                         generate_ewkt RGeo::Geos.factory(srid: srid).parse_wkb(coordinates)
                       else
-                        # select_value("SELECT ST_AsEWKT(ST_GeomFromEWKB(E'\\\\x#{coordinates}'))")
-                        # parser = RGeo::WKRep::WKBParser.new(factory, support_ewkb: true)
                         generate_ewkt Geometry.factory.parse_wkb(coordinates)
                       end
                     elsif format == 'gml' && ::Charta::GML.valid?(coordinates)
@@ -49,25 +49,27 @@ module Charta
                     elsif format == 'kml' && ::Charta::KML.valid?(coordinates)
                       ::Charta::KML.new(coordinates).to_ewkt
                     else # WKT expected
-                      # byebug
                       if srs && srid = find_srid(srs)
-                        # select_value("SELECT ST_AsEWKT(ST_GeomFromText('#{coordinates}', #{srid}))")
-                        generate_ewkt RGeo::Geos.factory(srid: srid).parse_wkt(coordinates)
+                        begin
+                          f = RGeo::Geos.factory(srid: srid).parse_wkt(coordinates)
+                        rescue RGeo::Error::ParseError => e
+                          raise "Invalid EWKT (#{e.message}): #{coordinates}"
+                        end
+
+                        generate_ewkt f
                       else
-                        # select_value("SELECT ST_AsEWKT(ST_GeomFromEWKT('#{coordinates}'))")
                         generate_ewkt Geometry.feature(coordinates)
                       end
                     end
       else
         raise coordinates.inspect
-        geom_ewkt = select_value("SELECT ST_AsEWKT(ST_GeomFromText('#{coordinates.as_text}', #{coordinates.srid}))")
+        geom_ewkt = "SRID=#{coordinates.srid};#{coordinates.as_text}"
       end
       if geom_ewkt.to_s =~ /\A[[:space:]]*\z/
         raise ArgumentError, "Invalid data: coordinates=#{coordinates.inspect}, srid=#{srid.inspect}"
       end
-      # select_value("SELECT GeometryType(ST_GeomFromEWKT('#{geom_ewkt}'))").to_s.strip
       type = Geometry.feature(geom_ewkt).geometry_type
-      puts type.inspect
+      # puts type.inspect
       geom = case type
              when RGeo::Feature::Point then
                Point.new(geom_ewkt)
@@ -76,9 +78,9 @@ module Charta
              when RGeo::Feature::Polygon then
                Polygon.new(geom_ewkt)
              when RGeo::Feature::MultiPolygon then
-               MultiPolygon.new(geom_ewkt, flatten_collection, options)
+               MultiPolygon.new(geom_ewkt)
              when RGeo::Feature::GeometryCollection then
-               GeometryCollection.new(geom_ewkt, flatten_collection, options)
+               GeometryCollection.new(geom_ewkt)
              else
                Geometry.new(geom_ewkt)
              end
@@ -92,26 +94,13 @@ module Charta
     def make_line(points, options = {})
       options[:srid] ||= new_geometry(points.first).srid if points.any?
       options[:srid] ||= 4326
-      list = points.map { |p| new_geometry(p).geom }
-      new_geometry(select_value("SELECT ST_AsEWKT(ST_MakeLine(ARRAY[#{list.join(', ')}]))"))
+
+      ewkt = "SRID=#{options[:srid]};LINESTRING(" + points.map { |wkt| p = new_geometry(wkt); "#{p.x} #{p.y}" }.join(', ') + ')'
+      new_geometry(ewkt)
     end
 
     def empty_geometry(srid = :WGS84)
       GeometryCollection.empty(srid)
-    end
-
-    # Execute a query
-    def select_value(query)
-      raise "No more ActiveRecord::Base.connection.select_value(query)"
-    end
-
-    def select_values(query)
-      raise "No more ActiveRecord::Base.connection.select_values(query)"
-    end
-
-    # Execute a query
-    def select_row(query)
-      raise "No more ActiveRecord::Base.connection.select_rows(query).first"
     end
 
     def generate_ewkt(feature)
@@ -136,8 +125,6 @@ module Charta
     def find_system(_srname)
       nil
     end
-
-
 
     # Check and returns the SRID matching with srname or SRID.
     def find_srid(srname_or_srid)
@@ -179,10 +166,6 @@ module Charta
 
     def from_geojson(data, srid = nil)
       new_geometry(::Charta::GeoJSON.new(data, srid).to_ewkt)
-    end
-
-    def new_collection(geometries)
-      geometries.is_a?(Array) && geometries.any? ? new_geometry(Charta.select_value("SELECT ST_AsEWKT(ST_Collect(ARRAY[#{geometries.collect { |geo| geo[:shape].geom }.join(',')}]))"), nil, nil, false, geometries) : Charta.empty_geometry
     end
   end
 end
