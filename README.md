@@ -1,6 +1,6 @@
 # Charta
 
-Charta is an overlay to RGeo. Basically, it was developped to permit to manipulate more easily spatial data without using factory system. It's always the case. The code was extracted from [Ekylibre](https://github.com/ekylibre/ekylibre).
+Charta is an overlay to [RGeo](https://github.com/rgeo/rgeo). Basically, it was developped to permit to manipulate more easily spatial data without using factory system. It's always the case. The code was extracted from [Ekylibre](https://github.com/ekylibre/ekylibre).
 
 ## Installation
 
