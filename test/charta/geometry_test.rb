@@ -9,10 +9,9 @@ module Charta
                  'MULTIPOINT((3.5 5.6), (4.8 10.5))',
                  'MULTILINESTRING((3 4,10 50,20 25),(-5 -8,-10 -8,-15 -4))',
                  'MULTIPOLYGON(((1 1,5 1,5 5,1 5,1 1),(2 2,2 3,3 3,3 2,2 2)),((6 3,9 2,9 4,6 3)))',
-
                  'GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))',
-                 'POINT ZM (1 1 5 60)',
-                 'POINT M (1 1 80)',
+                 # 'POINT ZM (1 1 5 60)',
+                 # 'POINT M (1 1 80)',
                  'POINT EMPTY',
                  'MULTIPOLYGON EMPTY']
 
@@ -29,6 +28,24 @@ module Charta
       end
 
       assert Charta.empty_geometry.empty?
+    end
+
+    def test_srid_in_ewkt
+      geom = Charta.new_geometry('SRID=2154;MULTIPOLYGON(((7.40679681301117 48.1167274678089,7.40882456302643 48.1158768860692,7.40882456302643 48.1158679325024,7.40678608417511 48.1167220957579,7.40679681301117 48.1167274678089)))')
+      assert_equal 2154, geom.srid
+      assert_equal '2154', geom.to_ewkt.split(/[\=\;]+/)[1], geom.to_ewkt
+      geom2 = Charta.new_geometry(geom)
+      assert_equal 2154, geom2.srid
+      assert_equal geom, geom2
+
+      geom = Charta.new_geometry('MULTIPOLYGON(((7.40679681301117 48.1167274678089,7.40882456302643 48.1158768860692,7.40882456302643 48.1158679325024,7.40678608417511 48.1167220957579,7.40679681301117 48.1167274678089)))')
+      assert_equal 4326, geom.srid
+      assert_equal '4326', geom.to_ewkt.split(/[\=\;]+/)[1], geom.to_ewkt
+    end
+
+    def test_type
+      geo = Charta.new_geometry('SRID=4326;MULTIPOLYGON(((7.40679681301117 48.1167274678089,7.40882456302643 48.1158768860692,7.40882456302643 48.1158679325024,7.40678608417511 48.1167220957579,7.40679681301117 48.1167274678089)))')
+      assert_equal :multi_polygon, geo.type
     end
 
     def test_different_GeoJSON_input_formats
@@ -106,21 +123,22 @@ module Charta
     end
 
     def test_different_GML_input_formats
-      file = File.open(fixture_files_path.join('map.gml'))
-      xml = file.read
-
+      xml = File.read fixture_files_path.join('map.gml')
       assert ::Charta::GML.valid?(xml), 'GML should be valid'
       geom = Charta.new_geometry(xml, nil, 'gml', false)
       assert_equal 4326, geom.srid
     end
 
     def test_different_KML_input_formats
-      file = File.open(fixture_files_path.join('map.kml'))
-      xml = file.read
-
+      xml = File.read fixture_files_path.join('map.kml')
       assert ::Charta::KML.valid?(xml), 'KML should be valid'
       geom = Charta.new_geometry(xml, nil, 'kml', false)
       assert_equal 4326, geom.srid
+    end
+
+    def test_three_dimensional_json_support
+      json = File.read fixture_files_path.join('map_3d.json')
+      geom = Charta.new_geometry(json)
     end
 
     def test_comparison_and_methods_between_2_geometries
@@ -169,30 +187,58 @@ module Charta
 
     def test_retrieval_of_a_GeometryCollection_as_a_valid_geojson_feature_collection
       sample = 'GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))'
-      exp_result = {
-        type: 'FeatureCollection',
-        features: [
-          { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [4, 6] } },
-          { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[4, 6], [7, 10]] } }
+      expected_result = {
+        'type' => 'GeometryCollection',
+        'geometries' => [
+          { 'type' => 'Point', 'coordinates' => [4.0, 6.0] },
+          { 'type' => 'LineString', 'coordinates' => [[4.0, 6.0], [7, 10]] }
         ]
-      } # .with_indifferent_access
+      }
 
       geom = Charta.new_geometry(sample)
-      json_object = geom.to_json_object(true)
+      json_object = geom.to_json_object
 
-      assert_equal 'Hash', json_object.class.name
-      assert json_object.key?('type'), "json should include the 'type' key"
-      assert_equal 'FeatureCollection', json_object.try(:[], 'type')
+      assert_equal Hash, json_object.class, 'JSON object should be a Hash'
+      assert json_object.key?('type'), "JSON object should include the 'type' key"
+      assert_equal 'GeometryCollection', json_object['type'], 'JSON object should be a GeometryCollection'
 
-      assert json_object.key?('features'), "json should include the 'features' key"
+      assert_equal expected_result, json_object
+    end
 
-      json_object.fetch('features', []).each do |feature|
-        assert_equal 'Feature', feature.try(:[], 'type')
-        assert feature.key?('geometry'), "json should include the 'geometry' key"
-        assert_equal 'Hash', feature.class.name
+    def test_transformation
+      geom = Charta.new_geometry('POINT(-0.54413 44.818208)', 4326)
+      assert_equal 4326, geom.srid
+      lambert = geom.transform(2154)
+      assert lambert
+      assert_equal 2154, lambert.srid
+      assert_equal 419_912.576891, lambert.x.round(6)
+      assert_equal 6_419_514.472132, lambert.y.round(6)
+      back = lambert.transform(4326)
+      assert back
+      assert_equal 4326, back.srid
+      assert_equal geom.x, back.x.round(6)
+      assert_equal geom.y, back.y.round(6)
+    end
+
+    def test_export_format
+      samples = ['POINT(6 10)',
+                 'LINESTRING(3 4,10 50,20 25)',
+                 'POLYGON((1 1,5 1,5 5,1 5,1 1))',
+                 'MULTIPOINT((3.5 5.6), (4.8 10.5))',
+                 'MULTILINESTRING((3 4,10 50,20 25),(-5 -8,-10 -8,-15 -4))',
+                 'MULTIPOLYGON(((1 1,5 1,5 5,1 5,1 1),(2 2,2 3,3 3,3 2,2 2)),((6 3,9 2,9 4,6 3)))',
+                 'GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))',
+                 # 'POINT ZM (1 1 5 60)',
+                 # 'POINT M (1 1 80)',
+                 'POINT EMPTY',
+                 'MULTIPOLYGON EMPTY']
+      samples.each do |s|
+        geom = Charta.new_geometry(s, 4326)
+        assert geom.to_wkt
+        assert geom.to_ewkt
+        assert geom.to_ewkb
+        assert geom.to_svg
       end
-
-      assert_equal exp_result, json_object
     end
   end
 end

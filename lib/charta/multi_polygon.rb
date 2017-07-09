@@ -15,9 +15,14 @@ module Charta
 
     # Extract polygons ordered by 'PointOnSurface' position
     def polygons
-      @polygons ||= select_values("SELECT ST_AsEWKT(geom) FROM (SELECT ST_GeometryN(#{geom}, generate_series(1, ST_NumGeometries(#{geom}))) AS geom) AS polygons ORDER BY ST_X(ST_PointOnSurface(geom)), ST_Y(ST_PointOnSurface(geom))").map do |polygon|
-        Polygon.new(polygon)
-      end || []
+      unless defined? @polygons
+        @polygons = []
+        feature.each do |polygon|
+          generator = RGeo::WKRep::WKTGenerator.new(tag_format: :ewkt, emit_ewkt_srid: true)
+          @polygons << Polygon.new(generator.generate(polygon))
+        end
+      end
+      @polygons
     end
   end
 end

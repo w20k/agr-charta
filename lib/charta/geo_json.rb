@@ -1,3 +1,5 @@
+require 'json'
+
 module Charta
   # Represents a Geometry with SRID
   class GeoJSON
@@ -5,18 +7,20 @@ module Charta
 
     def initialize(data, srid = :WGS84)
       srid ||= :WGS84
-      @json = (data.is_a?(Hash) ? data : JSON.parse(data))
-      lsrid = @json['crs']['properties']['name'] if @json.is_a?(Hash) && @json['crs'].is_a?(Hash) && @json['crs']['properties'].is_a?(Hash)
+      @json = self.class.flatten(data.is_a?(Hash) ? data : JSON.parse(data))
+      lsrid = @json['crs']['properties']['name'] if @json.is_a?(Hash) &&
+                                                    @json['crs'].is_a?(Hash) &&
+                                                    @json['crs']['properties'].is_a?(Hash)
       lsrid ||= srid
       @srid = ::Charta.find_srid(lsrid)
     end
 
-    def flatten
-      self.class.flatten(@json)
-    end
-
     def geom
       Charta.new_geometry(to_ewkt)
+    end
+
+    def to_hash
+      @json
     end
 
     def to_ewkt
@@ -38,16 +42,15 @@ module Charta
         false
       end
 
+      # Force coordinates to 2D
       def flatten(hash)
-        flattened =
-          if hash['type'] == 'FeatureCollection'
-            flatten_feature_collection(hash)
-          elsif hash['type'] == 'Feature'
-            flatten_feature(hash)
-          else
-            flatten_geometry(hash)
-          end
-        new(flattened)
+        if hash['type'] == 'FeatureCollection'
+          flatten_feature_collection(hash)
+        elsif hash['type'] == 'Feature'
+          flatten_feature(hash)
+        else
+          flatten_geometry(hash)
+        end
       end
 
       def flatten_feature_collection(hash)
@@ -73,7 +76,7 @@ module Charta
           when 'GeometryCollection' then
             return hash.merge('geometries' => hash['geometries'].map { |g| flatten_geometry(g) })
           else
-            raise StandardError, "Cannot handle: #{hash['type']}"
+            raise StandardError, "Cannot handle: #{hash['type'].inspect}. In #{hash.inspect}"
           end
 
         hash.merge('coordinates' => flattened)
@@ -84,7 +87,8 @@ module Charta
       end
 
       def object_to_ewkt(hash)
-        send("#{hash['type'].gsub(/(.)([A-Z])/, '\1_\2').downcase}_to_ewkt", hash)
+        type = hash[:type] || hash['type']
+        send("#{type.gsub(/(.)([A-Z])/, '\1_\2').downcase}_to_ewkt", hash)
       end
 
       def feature_collection_to_ewkt(hash)
