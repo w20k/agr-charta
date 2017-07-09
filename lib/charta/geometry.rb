@@ -14,9 +14,10 @@ module Charta
       "<#{self.class.name}(#{to_ewkt})>"
     end
 
-    #  Returns the type of the geometry as a string
+    # Returns the type of the geometry as a string. Example: point,
+    # multi_polygon, geometry_collection...
     def type
-      feature.geometry_type.name.split('::').last.underscore.upcase
+      Charta.underscore(feature.geometry_type.type_name).to_sym
     end
 
     # Returns the type of the geometry as a string. EG: 'ST_Linestring', 'ST_Polygon',
@@ -68,7 +69,7 @@ module Charta
       { preserve_aspect_ratio: 'xMidYMid meet',
         width: 180, height: 180,
         view_box: bounding_box.svg_view_box.join(' ') }.merge(options).each do |attr, value|
-        svg << " #{attr.to_s.camelcase(:lower)}=\"#{value}\""
+        svg << " #{Charta.camelcase(attr.to_s, :lower)}=\"#{value}\""
       end
       svg << "><path d=\"#{to_svg_path}\"/></svg>"
       svg
@@ -134,15 +135,50 @@ module Charta
       surface? ? feature.point_on_surface : nil
     end
 
+    def convert_to(new_type)
+      if new_type == type
+        self
+      elsif new_type == :multi_point
+        flatten_multi(:point)
+      elsif new_type == :multi_line_string
+        flatten_multi(:line_string)
+      elsif new_type == :multi_polygon
+        flatten_multi(:polygon)
+      end
+    end
+
+    def flatten_multi(as_type)
+      items = []
+      as_multi_type = "multi_#{as_type}".to_sym
+      if type == as_type
+        items << feature
+      elsif is_a? :geometry_collection
+        feature.each do |geom|
+          type_name = Charta.underscore(geom.geometry_type.type_name).to_sym
+          if type_name == as_type
+            items << geom
+          elsif type_name == as_multi_type
+            geom.each do |item|
+              items << item
+            end
+          end
+        end
+      end
+      Charta.new_geometry(feature.factory.send(as_multi_type, items))
+    end
+
     # Returns a new geometry with the coordinates converted into the new SRS
     def transform(new_srid)
       return self if new_srid == srid
-      raise 'Proj is not supported' unless RGeo::CoordSys::Proj4.supported?
+      raise 'Proj is not supported. Cannot tranform' unless RGeo::CoordSys::Proj4.supported?
+      new_srid = Charta::SRS[new_srid] || new_srid
       database = self.class.srs_database
+      new_proj_entry = database.get(new_srid)
+      raise "Cannot find proj for SRID: #{new_srid}" if new_proj_entry.nil?
       new_feature = RGeo::CoordSys::Proj4.transform(
         database.get(srid).proj4,
         feature,
-        database.get(new_srid).proj4,
+        new_proj_entry.proj4,
         self.class.factory(new_srid)
       )
       generator = RGeo::WKRep::WKTGenerator.new(tag_format: :ewkt, emit_ewkt_srid: true)
@@ -206,10 +242,23 @@ module Charta
         RGeo::Geos.factory(
           # srs_database: srs_database,
           srid: srid,
-          wkt_generator: { type_format: :ewkt, emit_ewkt_srid: true, convert_case: :upper },
-          wkt_parser: { support_ewkt: true },
-          wkb_generator:  { type_format: :ewkb, emit_ewkb_srid: true, hex_format: true },
-          wkb_parser: { support_ewkb: true }
+          # has_z_coordinate: true,
+          wkt_generator: {
+            type_format: :ewkt,
+            emit_ewkt_srid: true,
+            convert_case: :upper
+          },
+          wkt_parser: {
+            support_ewkt: true
+          },
+          wkb_generator:  {
+            type_format: :ewkb,
+            emit_ewkb_srid: true,
+            hex_format: true
+          },
+          wkb_parser: {
+            support_ewkb: true
+          }
         )
       end
 
@@ -222,7 +271,7 @@ module Charta
         srid ||= 4326
         factory(srid).parse_wkt(ewkt)
       rescue RGeo::Error::ParseError => e
-        raise "Invalid EWKT (#{e.message}): #{ewkt}"
+        raise "Invalid EWKT (#{e.class.name}: #{e.message}): #{ewkt}"
       end
     end
   end

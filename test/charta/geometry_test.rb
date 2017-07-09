@@ -9,7 +9,6 @@ module Charta
                  'MULTIPOINT((3.5 5.6), (4.8 10.5))',
                  'MULTILINESTRING((3 4,10 50,20 25),(-5 -8,-10 -8,-15 -4))',
                  'MULTIPOLYGON(((1 1,5 1,5 5,1 5,1 1),(2 2,2 3,3 3,3 2,2 2)),((6 3,9 2,9 4,6 3)))',
-
                  'GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))',
                  # 'POINT ZM (1 1 5 60)',
                  # 'POINT M (1 1 80)',
@@ -31,9 +30,22 @@ module Charta
       assert Charta.empty_geometry.empty?
     end
 
+    def test_srid_in_ewkt
+      geom = Charta.new_geometry('SRID=2154;MULTIPOLYGON(((7.40679681301117 48.1167274678089,7.40882456302643 48.1158768860692,7.40882456302643 48.1158679325024,7.40678608417511 48.1167220957579,7.40679681301117 48.1167274678089)))')
+      assert_equal 2154, geom.srid
+      assert_equal '2154', geom.to_ewkt.split(/[\=\;]+/)[1], geom.to_ewkt
+      geom2 = Charta.new_geometry(geom)
+      assert_equal 2154, geom2.srid
+      assert_equal geom, geom2
+
+      geom = Charta.new_geometry('MULTIPOLYGON(((7.40679681301117 48.1167274678089,7.40882456302643 48.1158768860692,7.40882456302643 48.1158679325024,7.40678608417511 48.1167220957579,7.40679681301117 48.1167274678089)))')
+      assert_equal 4326, geom.srid
+      assert_equal '4326', geom.to_ewkt.split(/[\=\;]+/)[1], geom.to_ewkt
+    end
+
     def test_type
       geo = Charta.new_geometry('SRID=4326;MULTIPOLYGON(((7.40679681301117 48.1167274678089,7.40882456302643 48.1158768860692,7.40882456302643 48.1158679325024,7.40678608417511 48.1167220957579,7.40679681301117 48.1167274678089)))')
-      assert_equal 'MULTI_POLYGON', geo.type
+      assert_equal :multi_polygon, geo.type
     end
 
     def test_different_GeoJSON_input_formats
@@ -111,21 +123,22 @@ module Charta
     end
 
     def test_different_GML_input_formats
-      file = File.open(fixture_files_path.join('map.gml'))
-      xml = file.read
-
+      xml = File.read fixture_files_path.join('map.gml')
       assert ::Charta::GML.valid?(xml), 'GML should be valid'
       geom = Charta.new_geometry(xml, nil, 'gml', false)
       assert_equal 4326, geom.srid
     end
 
     def test_different_KML_input_formats
-      file = File.open(fixture_files_path.join('map.kml'))
-      xml = file.read
-
+      xml = File.read fixture_files_path.join('map.kml')
       assert ::Charta::KML.valid?(xml), 'KML should be valid'
       geom = Charta.new_geometry(xml, nil, 'kml', false)
       assert_equal 4326, geom.srid
+    end
+
+    def test_three_dimensional_json_support
+      json = File.read fixture_files_path.join('map_3d.json')
+      geom = Charta.new_geometry(json)
     end
 
     def test_comparison_and_methods_between_2_geometries
@@ -208,16 +221,19 @@ module Charta
     end
 
     def test_export_format
-      samples = {
-        'Point' => 'POINT(6 10)',
-        'LineString' => 'LINESTRING(3 4,10 50,20 25)',
-        'Polygon' => 'POLYGON((1 1,5 1,5 5,1 5,1 1))',
-        'MultiPolygon' => 'MULTIPOLYGON(((1 1,5 1,5 5,1 5,1 1),(2 2,2 3,3 3,3 2,2 2)),((6 3,9 2,9 4,6 3)))',
-        'GeometryCollection' => 'GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))'
-      }
-      samples.each do |_s|
-        geom = Charta.new_geometry(geom, 4326)
-
+      samples = ['POINT(6 10)',
+                 'LINESTRING(3 4,10 50,20 25)',
+                 'POLYGON((1 1,5 1,5 5,1 5,1 1))',
+                 'MULTIPOINT((3.5 5.6), (4.8 10.5))',
+                 'MULTILINESTRING((3 4,10 50,20 25),(-5 -8,-10 -8,-15 -4))',
+                 'MULTIPOLYGON(((1 1,5 1,5 5,1 5,1 1),(2 2,2 3,3 3,3 2,2 2)),((6 3,9 2,9 4,6 3)))',
+                 'GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))',
+                 # 'POINT ZM (1 1 5 60)',
+                 # 'POINT M (1 1 80)',
+                 'POINT EMPTY',
+                 'MULTIPOLYGON EMPTY']
+      samples.each do |s|
+        geom = Charta.new_geometry(s, 4326)
         assert geom.to_wkt
         assert geom.to_ewkt
         assert geom.to_ewkb

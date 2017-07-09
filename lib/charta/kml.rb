@@ -41,7 +41,7 @@ module Charta
       end
 
       def object_to_ewkt(fragment)
-        send("#{fragment.name.underscore}_to_ewkt", fragment)
+        send("#{Charta.underscore(fragment.name)}_to_ewkt", fragment)
       end
 
       def document_to_ewkt(kml)

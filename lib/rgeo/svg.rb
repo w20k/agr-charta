@@ -2,7 +2,7 @@ module RGeo
   module SVG
     class << self
       def encode(feature)
-        send('encode_' + feature.geometry_type.name.split('::').last.underscore, feature)
+        send('encode_' + Charta.underscore(feature.geometry_type.type_name), feature)
       end
 
       protected
@@ -21,7 +21,7 @@ module RGeo
 
       def encode_line_string(feature)
         points = []
-        feature.each do |point|
+        feature.points.each do |point|
           points << coordinates(point)
         end
         'M' + points.join('L')
@@ -61,7 +61,7 @@ module RGeo
         geometries.join(' ')
       end
 
-      def coordinates(_point)
+      def coordinates(feature)
         feature.x.to_s + ',' + feature.y.to_s
       end
     end

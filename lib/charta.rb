@@ -11,9 +11,6 @@ require 'charta/bounding_box'
 require 'charta/geo_json'
 require 'charta/gml'
 require 'charta/kml'
-require 'string'
-
-require 'byebug'
 
 unless RGeo::CoordSys::Proj4.supported?
   puts "Proj4 is not supported. Some actions won't work"
@@ -23,6 +20,7 @@ end
 module Charta
   SRS = {
     WGS84: 4326,
+    CRS84: 4326,
     RGF93: 2143
   }.freeze
 
@@ -48,6 +46,8 @@ module Charta
                       ::Charta::GML.new(coordinates, srid).to_ewkt
                     elsif format == 'kml' && ::Charta::KML.valid?(coordinates)
                       ::Charta::KML.new(coordinates).to_ewkt
+                    elsif coordinates =~ /^SRID\=\d+\;/i
+                      generate_ewkt Geometry.feature(coordinates)
                     else # WKT expected
                       if srs && srid = find_srid(srs)
                         begin
@@ -55,15 +55,13 @@ module Charta
                         rescue RGeo::Error::ParseError => e
                           raise "Invalid EWKT (#{e.message}): #{coordinates}"
                         end
-
                         generate_ewkt f
                       else
                         generate_ewkt Geometry.feature(coordinates)
                       end
                     end
-      else
-        raise coordinates.inspect
-        geom_ewkt = "SRID=#{coordinates.srid};#{coordinates.as_text}"
+      else # Default for RGeo
+        geom_ewkt = generate_ewkt coordinates
       end
       if geom_ewkt.to_s =~ /\A[[:space:]]*\z/
         raise ArgumentError, "Invalid data: coordinates=#{coordinates.inspect}, srid=#{srid.inspect}"
@@ -129,7 +127,8 @@ module Charta
     # Check and returns the SRID matching with srname or SRID.
     def find_srid(srname_or_srid)
       if srname_or_srid.to_s =~ /\Aurn:ogc:def:crs:.*\z/
-        srname_or_srid.split(':').last
+        x = srname_or_srid.split(':').last.upcase.to_sym
+        SRS[x] || x
       elsif srname_or_srid.to_s =~ /\AEPSG::?(\d{4,5})\z/
         srname_or_srid.split(':').last
       elsif srname_or_srid.to_s =~ /\A\d+\z/
@@ -137,16 +136,6 @@ module Charta
       else
         SRS[srname_or_srid] || srname_or_srid
       end
-    end
-
-    def clean_for_active_record(value, options = {})
-      return nil if value.to_s =~ /\A[[:space:]]*\z/
-      value = if value.is_a?(Hash) || (value.is_a?(String) && value =~ /\A\{.*\}\z/)
-                from_geojson(value)
-              else
-                new_geometry(value)
-              end
-      value.flatten.convert_to(options[:type]).to_rgeo
     end
 
     def from(format, data)
@@ -166,6 +155,22 @@ module Charta
 
     def from_geojson(data, srid = nil)
       new_geometry(::Charta::GeoJSON.new(data, srid).to_ewkt)
+    end
+
+    # Utility methods
+
+    def underscore(text)
+      text.gsub(/::/, '/')
+          .gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
+          .gsub(/([a-z\d])([A-Z])/, '\1_\2')
+          .tr('-', '_')
+          .downcase
+    end
+
+    def camelcase(text, first_letter = :upper)
+      ret = text.split(/[_\-]+/).map { |word| word[0..0].upcase + word[1..-1].downcase }.join
+      ret = text[0..0].downcase + text[1..-1] if first_letter == :lower
+      ret
     end
   end
 end

@@ -82,8 +82,6 @@ module Charta
         geojson = Charta::GeoJSON.new(sample)
         assert geojson.valid?
         assert_equal 4326, geojson.srid
-
-        assert_equal geojson.geom, geojson.flatten.geom
       end
     end
 
@@ -100,7 +98,7 @@ module Charta
           [102.0, 0.0], [103.0, 1.0], [104.0, 0.0], [105.0, 1.0]
         ]
       }
-      assert_equal Charta::GeoJSON.new(flat).geom, Charta::GeoJSON.new(topo).flatten.geom
+      assert_equal Charta::GeoJSON.new(flat).to_hash, Charta::GeoJSON.flatten(topo)
     end
   end
 end

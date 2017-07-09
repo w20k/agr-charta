@@ -19,9 +19,9 @@ Gem::Specification.new do |spec|
   end
   spec.require_paths = ['lib']
 
-  spec.add_dependency 'nokogiri', '~> 1.8.0'
+  spec.add_dependency 'nokogiri', '>= 1.7.0'
   spec.add_dependency 'rgeo', '~> 0.6.0'
-  spec.add_dependency 'json', '~> 2.1.0'
+  spec.add_dependency 'json', '>= 1.8.0'
   spec.add_dependency 'rgeo-geojson', '~> 0.4.3'
   spec.add_development_dependency 'bundler', '~> 1.14'
   spec.add_development_dependency 'rake', '~> 10.0'

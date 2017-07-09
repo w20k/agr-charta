@@ -67,7 +67,7 @@ module Charta
       end
 
       def object_to_ewkt(fragment, srid)
-        send("#{fragment.name.underscore}_to_ewkt", fragment, srid)
+        send("#{Charta.underscore(fragment.name)}_to_ewkt", fragment, srid)
       end
 
       def document_to_ewkt(gml, srid)
