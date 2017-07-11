@@ -141,14 +141,11 @@ module Charta
     end
 
     def convert_to(new_type)
-      if new_type == type
-        self
-      elsif new_type == :multi_point
-        flatten_multi(:point)
-      elsif new_type == :multi_line_string
-        flatten_multi(:line_string)
-      elsif new_type == :multi_polygon
-        flatten_multi(:polygon)
+      case new_type
+      when type then self
+      when :multi_point then flatten_multi(:point)
+      when :multi_line_string then flatten_multi(:line_string)
+      when :multi_polygon then flatten_multi(:polygon)
       end
     end
 
