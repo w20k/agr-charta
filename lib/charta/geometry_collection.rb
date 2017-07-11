@@ -5,5 +5,13 @@ module Charta
       srid = Charta.find_srid(srid.nil? ? :WGS84 : srid)
       new("SRID=#{srid};GEOMETRYCOLLECTION EMPTY")
     end
+
+    def to_json_feature_collection
+      features = []
+      feature.each do |f|
+        features << Charta.new_geometry(f).to_json_feature
+      end
+      { type: 'FeatureCollection', features: features }
+    end
   end
 end

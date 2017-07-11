@@ -5,8 +5,9 @@ require 'rgeo/svg' # integrated lib for now
 module Charta
   # Represents a Geometry with SRID
   class Geometry
-    def initialize(ewkt)
+    def initialize(ewkt, properties = {})
       @ewkt = ewkt
+      @properties = properties
       raise ArgumentError, 'Need EWKT to instantiate Geometry' if @ewkt.to_s =~ /\A[[:space:]]*\z/
     end
 
@@ -127,12 +128,16 @@ module Charta
     # Computes the geometric center of a geometry, or equivalently, the center
     # of mass of the geometry as a POINT.
     def centroid
-      surface? ? feature.centroid : nil
+      return nil unless surface?
+      point = feature.centroid
+      [point.y, point.x]
     end
 
     # Returns a POINT guaranteed to lie on the surface.
     def point_on_surface
-      surface? ? feature.point_on_surface : nil
+      return nil unless surface?
+      point = feature.point_on_surface
+      [point.y, point.x]
     end
 
     def convert_to(new_type)
@@ -152,7 +157,7 @@ module Charta
       as_multi_type = "multi_#{as_type}".to_sym
       if type == as_type
         items << feature
-      elsif is_a? :geometry_collection
+      elsif as_type == :geometry_collection
         feature.each do |geom|
           type_name = Charta.underscore(geom.geometry_type.type_name).to_sym
           if type_name == as_type
@@ -231,6 +236,10 @@ module Charta
 
     def feature
       self.class.feature(@ewkt)
+    end
+
+    def to_json_feature
+      { type: 'Feature', geometry: to_json_object }
     end
 
     class << self
