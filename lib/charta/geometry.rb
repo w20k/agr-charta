@@ -1,6 +1,7 @@
 require 'json'
 require 'rgeo/geo_json'
 require 'rgeo/svg' # integrated lib for now
+require 'byebug'
 
 module Charta
   # Represents a Geometry with SRID
@@ -245,10 +246,9 @@ module Charta
       end
 
       def factory(srid = 4326)
-        RGeo::Geos.factory(
-          # srs_database: srs_database,
+        proj4 = '+proj=cea +lon_0=0 +lat_ts=30 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs'
+        geos_factory = RGeo::Geos.factory(
           srid: srid,
-          # has_z_coordinate: true,
           wkt_generator: {
             type_format: :ewkt,
             emit_ewkt_srid: true,
@@ -266,6 +266,28 @@ module Charta
             support_ewkb: true
           }
         )
+        projected_factory = RGeo::Geographic.projected_factory(
+          srid: srid,
+          wkt_generator: {
+            type_format: :ewkt,
+            emit_ewkt_srid: true,
+            convert_case: :upper
+          },
+          wkt_parser: {
+            support_ewkt: true
+          },
+          wkb_generator:  {
+            type_format: :ewkb,
+            emit_ewkb_srid: true,
+            hex_format: true
+          },
+          wkb_parser: {
+            support_ewkb: true
+          },
+          projection_srid: 6933,
+          projection_proj4: proj4
+        )
+        srid.to_i == 4326 ? projected_factory : geos_factory
       end
 
       def feature(ewkt)
