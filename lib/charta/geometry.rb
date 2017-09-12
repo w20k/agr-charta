@@ -246,8 +246,26 @@ module Charta
       end
 
       def factory(srid = 4326)
-        proj4 = '+proj=cea +lon_0=0 +lat_ts=30 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs'
-        geos_factory = RGeo::Geos.factory(
+        return projected_factory(srid) if srid.to_i == 4326
+        geos_factory(srid)
+      end
+
+      def feature(ewkt)
+        # Cleans empty geometries
+        ewkt.gsub!(/(GEOMETRYCOLLECTION|GEOMETRY|((MULTI)?(POINT|LINESTRING|POLYGON)))\(\)/, '\1 EMPTY')
+        srs = ewkt.split(/[\=\;]+/)[0..1]
+        srid = nil
+        srid = srs[1] if srs[0] =~ /srid/i
+        srid ||= 4326
+        factory(srid).parse_wkt(ewkt)
+      rescue RGeo::Error::ParseError => e
+        raise "Invalid EWKT (#{e.class.name}: #{e.message}): #{ewkt}"
+      end
+
+      private
+
+      def geos_factory(srid)
+        RGeo::Geos.factory(
           srid: srid,
           wkt_generator: {
             type_format: :ewkt,
@@ -266,7 +284,11 @@ module Charta
             support_ewkb: true
           }
         )
-        projected_factory = RGeo::Geographic.projected_factory(
+      end
+
+      def projected_factory(srid)
+        proj4 = '+proj=cea +lon_0=0 +lat_ts=30 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs'
+        RGeo::Geographic.projected_factory(
           srid: srid,
           wkt_generator: {
             type_format: :ewkt,
@@ -287,19 +309,6 @@ module Charta
           projection_srid: 6933,
           projection_proj4: proj4
         )
-        srid.to_i == 4326 ? projected_factory : geos_factory
-      end
-
-      def feature(ewkt)
-        # Cleans empty geometries
-        ewkt.gsub!(/(GEOMETRYCOLLECTION|GEOMETRY|((MULTI)?(POINT|LINESTRING|POLYGON)))\(\)/, '\1 EMPTY')
-        srs = ewkt.split(/[\=\;]+/)[0..1]
-        srid = nil
-        srid = srs[1] if srs[0] =~ /srid/i
-        srid ||= 4326
-        factory(srid).parse_wkt(ewkt)
-      rescue RGeo::Error::ParseError => e
-        raise "Invalid EWKT (#{e.class.name}: #{e.message}): #{ewkt}"
       end
     end
   end
