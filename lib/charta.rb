@@ -25,12 +25,14 @@ module Charta
   }.freeze
 
   class << self
-    def new_geometry(coordinates, srs = nil, format = nil, _flatten_collection = true, _options = {})
+    def new_feature(coordinates, srs = nil, format = nil, _flatten_collection = true, _options = {})
       geom_ewkt = nil
-      if coordinates.to_s =~ /\A[[:space:]]*\z/
-        geom_ewkt = empty_geometry(srs).to_ewkt
+      if coordinates.is_a?(RGeo::Feature::Instance)
+        return Geometry.feature(coordinates)
       elsif coordinates.is_a?(::Charta::Geometry)
-        geom_ewkt = coordinates.to_ewkt
+        return coordinates
+      elsif coordinates.to_s =~ /\A[[:space:]]*\z/
+        geom_ewkt = empty_geometry(srs).to_ewkt
       elsif coordinates.is_a?(Hash) || (coordinates.is_a?(String) && ::Charta::GeoJSON.valid?(coordinates)) # GeoJSON
         srid = srs ? find_srid(srs) : :WGS84
         geom_ewkt = ::Charta::GeoJSON.new(coordinates, srid).to_ewkt
@@ -63,24 +65,29 @@ module Charta
       else # Default for RGeo
         geom_ewkt = generate_ewkt coordinates
       end
-      if geom_ewkt.to_s =~ /\A[[:space:]]*\z/
+      if geom_ewkt.to_s =~ /\A[[:space:]]*\z/ && !feature
         raise ArgumentError, "Invalid data: coordinates=#{coordinates.inspect}, srid=#{srid.inspect}"
       end
-      type = Geometry.feature(geom_ewkt).geometry_type
-      # puts type.inspect
+      Geometry.feature(geom_ewkt)
+    end
+
+    def new_geometry(coordinates, srs = nil, format = nil, _flatten_collection = true, _options = {})
+      return coordinates if coordinates.is_a?(::Charta::Geometry)
+      feature = Charta.new_feature(coordinates)
+      type = feature.geometry_type
       geom = case type
              when RGeo::Feature::Point then
-               Point.new(geom_ewkt)
+               Point.new(feature)
              when RGeo::Feature::LineString then
-               LineString.new(geom_ewkt)
+               LineString.new(feature)
              when RGeo::Feature::Polygon then
-               Polygon.new(geom_ewkt)
+               Polygon.new(feature)
              when RGeo::Feature::MultiPolygon then
-               MultiPolygon.new(geom_ewkt)
+               MultiPolygon.new(feature)
              when RGeo::Feature::GeometryCollection then
-               GeometryCollection.new(geom_ewkt)
+               GeometryCollection.new(feature)
              else
-               Geometry.new(geom_ewkt)
+               Geometry.new(feature)
              end
       geom
     end
