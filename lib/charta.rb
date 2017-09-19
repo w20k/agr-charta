@@ -65,7 +65,7 @@ module Charta
       else # Default for RGeo
         geom_ewkt = generate_ewkt coordinates
       end
-      if geom_ewkt.to_s =~ /\A[[:space:]]*\z/ && !feature
+      if geom_ewkt.to_s =~ /\A[[:space:]]*\z/
         raise ArgumentError, "Invalid data: coordinates=#{coordinates.inspect}, srid=#{srid.inspect}"
       end
       Geometry.feature(geom_ewkt)
