@@ -185,7 +185,7 @@ module Charta
         self.class.factory(new_srid)
       )
       generator = RGeo::WKRep::WKTGenerator.new(tag_format: :ewkt, emit_ewkt_srid: true)
-      self.class.new(generator.generate(new_feature))
+      Charta.new_geometry(generator.generate(new_feature))
     end
 
     # Produces buffer
