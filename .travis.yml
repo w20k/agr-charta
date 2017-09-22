@@ -4,6 +4,6 @@ rvm:
 before_install:
   - gem install bundler -v 1.14.6
   - gem uninstall rgeo
-  - apt-get install -f libgeos-dev libproj-dev libproj0
+  - sudo apt-get install -f libgeos-dev libproj-dev libproj0
   - gem install rgeo
 script: xvfb-run bundle exec rake test
