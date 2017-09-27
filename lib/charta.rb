@@ -73,7 +73,7 @@ module Charta
 
     def new_geometry(coordinates, srs = nil, format = nil, _flatten_collection = true, _options = {})
       return coordinates if coordinates.is_a?(::Charta::Geometry)
-      feature = Charta.new_feature(coordinates)
+      feature = Charta.new_feature(coordinates, srs, format, _flatten_collection, _options)
       type = feature.geometry_type
       geom = case type
              when RGeo::Feature::Point then
@@ -93,7 +93,8 @@ module Charta
     end
 
     def new_point(lat, lon, srid = 4326)
-      Point.new("SRID=#{srid};POINT(#{lon} #{lat})")
+      feature = Charta.new_feature("SRID=#{srid};POINT(#{lon} #{lat})")
+      Point.new(feature)
     end
 
     def make_line(points, options = {})

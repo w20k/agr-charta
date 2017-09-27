@@ -15,14 +15,9 @@ module Charta
 
     # Extract polygons ordered by 'PointOnSurface' position
     def polygons
-      unless defined? @polygons
-        @polygons = []
-        feature.each do |polygon|
-          generator = RGeo::WKRep::WKTGenerator.new(tag_format: :ewkt, emit_ewkt_srid: true)
-          @polygons << Polygon.new(generator.generate(polygon))
-        end
-      end
-      @polygons
+      @polygons ||= feature._elements.map do |polygon|
+        Polygon.new(polygon)
+      end || []
     end
   end
 end

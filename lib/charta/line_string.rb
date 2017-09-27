@@ -14,8 +14,7 @@ module Charta
 
     def points
       @points ||= feature.points.map do |point|
-        generator = RGeo::WKRep::WKTGenerator.new(tag_format: :ewkt, emit_ewkt_srid: true)
-        Point.new(generator.generate(point))
+        Point.new(point)
       end || []
     end
   end

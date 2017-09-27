@@ -1,5 +1,7 @@
-sudo: false
 language: ruby
 rvm:
-  - 2.2.3
-before_install: gem install bundler -v 1.14.6
+  - 2.2.7
+before_install:
+  - gem install bundler -v 1.14.6
+  - sudo apt-get install -f libgeos-dev libproj-dev
+script: bundle exec rake test

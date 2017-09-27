@@ -4,7 +4,7 @@ module Charta
   class GeometryCollectionTest < Charta::Test
     def test_empty
       geom = Charta::GeometryCollection.empty
-      assert geom.empty?
+      assert geom.feature.is_empty?
     end
   end
 end
