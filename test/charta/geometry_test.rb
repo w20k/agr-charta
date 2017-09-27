@@ -1,4 +1,5 @@
 require 'test_helper'
+require 'byebug'
 
 module Charta
   class GeometryTest < Charta::Test
@@ -138,7 +139,7 @@ module Charta
 
     def test_three_dimensional_json_support
       json = File.read fixture_files_path.join('map_3d.json')
-      geom = Charta.new_geometry(json)
+      Charta.new_geometry(json)
     end
 
     def test_comparison_and_methods_between_2_geometries
@@ -239,6 +240,47 @@ module Charta
         assert geom.to_ewkb
         assert geom.to_svg
       end
+    end
+
+    def test_area
+      data = '{
+                "type": "Feature",
+                "properties": {},
+                "geometry": {
+                  "type": "Polygon",
+                  "coordinates": [
+                    [
+                      [
+                        2.2214162349700928,
+                        45.89087440253303
+                      ],
+                      [
+                        2.220107316970825,
+                        45.88891786700034
+                      ],
+                      [
+                        2.2223711013793945,
+                        45.88809640024204
+                      ],
+                      [
+                        2.2246885299682617,
+                        45.88996335257688
+                      ],
+                      [
+                        2.223111391067505,
+                        45.8900679000522
+                      ],
+                      [
+                        2.2214162349700928,
+                        45.89087440253303
+                      ]
+                    ]
+                  ]
+                }
+              }'
+      geom = Charta.new_geometry(data)
+      assert_equal 4326, geom.srid
+      assert_equal 5.448, (geom.area/10000).round(3)
     end
   end
 end
