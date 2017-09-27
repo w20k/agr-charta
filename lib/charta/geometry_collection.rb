@@ -3,7 +3,8 @@ module Charta
   class GeometryCollection < Geometry
     def self.empty(srid = nil)
       srid = Charta.find_srid(srid.nil? ? :WGS84 : srid)
-      new("SRID=#{srid};GEOMETRYCOLLECTION EMPTY")
+      feature = Charta.new_feature("GEOMETRYCOLLECTION EMPTY", srid)
+      new(feature)
     end
 
     def to_json_feature_collection

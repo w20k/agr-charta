@@ -4,16 +4,4 @@ rvm:
 before_install:
   - gem install bundler -v 1.14.6
   - sudo apt-get install -f libgeos-dev libproj-dev
-  - echo ""
-  - echo ""
-  - echo ""
-  - echo "--- PROJ4 DEBUGGING ---"
-  - echo "$(which proj)"
-  - echo "$(find /usr/ | grep libproj.so)"
-  - echo "$(which geos)"
-  - echo "$(find /usr/ | grep libgeos.so)"
-  - echo "--- PROJ4 DEBUGGING ---"
-  - echo ""
-  - echo ""
-  - echo ""
 script: bundle exec rake test
