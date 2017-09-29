@@ -236,8 +236,8 @@ module Charta
       @feature
     end
 
-    def to_json_feature
-      { type: 'Feature', geometry: to_json_object }
+    def to_json_feature(properties = {})
+      { type: 'Feature', properties: properties, geometry: to_json_object }
     end
 
     class << self
