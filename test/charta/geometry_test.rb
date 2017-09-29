@@ -282,5 +282,15 @@ module Charta
       assert_equal 4326, geom.srid
       assert_equal 5.448, (geom.area/10000).round(3)
     end
+
+    def test_wkt_extraction_from_ewkt
+
+      wkt = "MULTIPOLYGON (((-0.900063514709473 44.2905272467262, -0.900835990905762 44.2907115613672, -0.902767181396484 44.2870251586485, -0.902037620544434 44.2867793902409, -0.900063514709473 44.2905272467262)))"
+      ewkt = "SRID=4326;#{wkt}"
+
+      geom = Charta.new_geometry(ewkt)
+
+      assert_equal wkt, geom.to_text
+    end
   end
 end
