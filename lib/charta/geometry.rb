@@ -42,7 +42,7 @@ module Charta
 
     # Returns the Well-Known Text (WKT) representation of the geometry/geography without SRID metadata
     def to_text
-      @feature.as_text
+      @feature.as_text.match(/\ASRID=.*;(.*)/)[1]
     end
     alias as_text to_text
     alias to_wkt to_text
