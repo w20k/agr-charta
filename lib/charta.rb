@@ -49,7 +49,11 @@ module Charta
                     elsif format == 'kml' && ::Charta::KML.valid?(coordinates)
                       ::Charta::KML.new(coordinates).to_ewkt
                     elsif coordinates =~ /^SRID\=\d+\;/i
-                      generate_ewkt Geometry.feature(coordinates)
+                      if feature = Geometry.feature(coordinates)
+                        generate_ewkt feature
+                      else
+                        Charta::GeometryCollection.empty.feature
+                      end
                     else # WKT expected
                       if srs && srid = find_srid(srs)
                         begin
