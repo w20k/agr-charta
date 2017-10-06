@@ -129,7 +129,7 @@ module Charta
     # Computes the geometric center of a geometry, or equivalently, the center
     # of mass of the geometry as a POINT.
     def centroid
-      return nil unless surface?
+      return nil unless surface? && !@feature.is_empty?
       point = @feature.centroid
       [point.y, point.x]
     end
@@ -155,7 +155,7 @@ module Charta
       as_multi_type = "multi_#{as_type}".to_sym
       if type == as_type
         items << @feature
-      elsif as_type == :geometry_collection
+      elsif type == :geometry_collection
         @feature.each do |geom|
           type_name = Charta.underscore(geom.geometry_type.type_name).to_sym
           if type_name == as_type
