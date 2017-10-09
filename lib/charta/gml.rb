@@ -72,7 +72,7 @@ module Charta
 
       def document_to_ewkt(gml, srid)
         # whole document
-        if gml.css("#{OGR_PREFIX}|FeatureCollection").nil? || gml.css("#{GML_PREFIX}|featureMember").nil?
+        if gml.css("#{OGR_PREFIX}|FeatureCollection").empty? || gml.css("#{GML_PREFIX}|featureMember").empty?
           # fragment
           if gml.root.name && TAGS.include?(gml.root.name)
             object_to_ewkt(gml.root, srid)

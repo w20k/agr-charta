@@ -98,7 +98,12 @@ module Charta
         end.join(', ') + ')'
       end
 
-      alias geometry_collection_to_ewkt feature_collection_to_ewkt
+      def geometry_collection_to_ewkt(hash)
+        return 'GEOMETRYCOLLECTION EMPTY' if hash['geometries'].nil?
+        'GEOMETRYCOLLECTION(' + hash['geometries'].collect do |feature|
+          object_to_ewkt(feature)
+        end.join(', ') + ')'
+      end
 
       def feature_to_ewkt(hash)
         object_to_ewkt(hash['geometry'])
