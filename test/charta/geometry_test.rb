@@ -1,5 +1,4 @@
 require 'test_helper'
-require 'byebug'
 
 module Charta
   class GeometryTest < Charta::Test
@@ -280,7 +279,7 @@ module Charta
               }'
       geom = Charta.new_geometry(data)
       assert_equal 4326, geom.srid
-      assert_equal 5.448, (geom.area/10000).round(3)
+      assert_equal 5.448, (geom.area / 10_000).round(3)
     end
 
     def test_wkt_extraction_from_ewkt

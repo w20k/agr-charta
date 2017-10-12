@@ -75,7 +75,7 @@ module Charta
       Geometry.feature(geom_ewkt)
     end
 
-    def new_geometry(coordinates, srs = nil, format = nil, _flatten_collection = true, _options = {})
+    def new_geometry(coordinates, _srs = nil, _format = nil, _flatten_collection = true, _options = {})
       return coordinates if coordinates.is_a?(::Charta::Geometry)
       feature = Charta.new_feature(coordinates, srs, format, _flatten_collection, _options)
       type = feature.geometry_type

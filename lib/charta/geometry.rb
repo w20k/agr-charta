@@ -1,7 +1,6 @@
 require 'json'
 require 'rgeo/geo_json'
 require 'rgeo/svg' # integrated lib for now
-require 'byebug'
 
 module Charta
   # Represents a Geometry with SRID
@@ -232,9 +231,7 @@ module Charta
       Charta.find_srid(name_or_srid)
     end
 
-    def feature
-      @feature
-    end
+    attr_reader :feature
 
     def to_json_feature(properties = {})
       { type: 'Feature', properties: properties, geometry: to_json_object }
