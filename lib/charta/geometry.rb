@@ -1,7 +1,6 @@
 require 'json'
 require 'rgeo/geo_json'
 require 'rgeo/svg' # integrated lib for now
-require 'byebug'
 
 module Charta
   # Represents a Geometry with SRID

@@ -1,5 +1,4 @@
 require 'test_helper'
-require 'byebug'
 
 module Charta
   class GeometryTest < Charta::Test
