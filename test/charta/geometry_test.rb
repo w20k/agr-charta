@@ -1,4 +1,5 @@
 require 'test_helper'
+require 'yaml'
 
 module Charta
   class GeometryTest < Charta::Test
@@ -279,17 +280,44 @@ module Charta
               }'
       geom = Charta.new_geometry(data)
       assert_equal 4326, geom.srid
-      assert_equal 5.448, (geom.area/10000).round(3)
+      assert_equal 5.448, (geom.area / 10_000).round(3)
     end
 
     def test_wkt_extraction_from_ewkt
-
-      wkt = "MULTIPOLYGON (((-0.900063514709473 44.2905272467262, -0.900835990905762 44.2907115613672, -0.902767181396484 44.2870251586485, -0.902037620544434 44.2867793902409, -0.900063514709473 44.2905272467262)))"
+      wkt = 'MULTIPOLYGON (((-0.900063514709473 44.2905272467262, -0.900835990905762 44.2907115613672, -0.902767181396484 44.2870251586485, -0.902037620544434 44.2867793902409, -0.900063514709473 44.2905272467262)))'
       ewkt = "SRID=4326;#{wkt}"
 
       geom = Charta.new_geometry(ewkt)
 
       assert_equal wkt, geom.to_text
+    end
+
+    def test_nil_feature
+      assert_raises ArgumentError do
+        Charta::Geometry.new(nil)
+      end
+
+      nil_geometry = Charta.new_geometry(nil)
+      assert nil_geometry.empty?
+      assert nil_geometry.inspect
+
+      assert_raises ArgumentError do
+        nil_geometry.feature = nil
+      end
+    end
+
+    def test_yaml_serialization
+      yaml = <<-YAML
+---
+!ruby/object:Charta::MultiPolygon
+ewkt: SRID=4326;MULTIPOLYGON(((1.64468269737984 49.4801478441764,1.64465846208501 49.4800879855142,1.64451455635114 49.4798795855698,1.64434333980203 49.4795066520487,1.64349432130535 49.4777636867183,1.64310806699683 49.47696228419,1.64329247554595 49.4769248156496,1.64577012185865 49.4763689056835,1.64593430444977 49.4767522589754,1.6468489005132 49.4785456945119,1.6468506318855 49.478549102676,1.64679688540217 49.4785941662853,1.64635829118453 49.4788544052356,1.64622114404453 49.4789337375618,1.64605021476746 49.4789997404691,1.64572298526764 49.4792123497544,1.6454403726604 49.4794945421142,1.64515435695648 49.4797246994857,1.64488613605499 49.479975644337,1.64468269737984 49.4801478441764)))
+options: {}
+YAML
+      object = YAML.safe_load(yaml, ['Charta::MultiPolygon'])
+
+      object2 = YAML.safe_load(object.to_yaml, ['Charta::MultiPolygon'])
+
+      assert_equal object, object2
     end
   end
 end
