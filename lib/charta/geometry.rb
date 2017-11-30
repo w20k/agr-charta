@@ -234,12 +234,12 @@ module Charta
     # TODO: Manage YAML domain type to ensure maintainability of YAML
     # serialization in time.
     def feature
-      if @feature.nil?
-        if @ewkt.nil?
-          raise StandardError, 'Invalid geometry (no feature, no EWKT)'
-        else
+      unless defined? @feature
+        if defined? @ewkt
           @feature = ::Charta::Geometry.from_ewkt(@ewkt)
           @properties = @options.dup if @options
+        else
+          raise StandardError, 'Invalid geometry (no feature, no EWKT)'
         end
       end
       @feature.dup
