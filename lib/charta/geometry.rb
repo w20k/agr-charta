@@ -38,6 +38,11 @@ module Charta
       feature
     end
 
+    # Delegates factory to RGeo
+    def factory
+      to_rgeo.factory
+    end
+
     # Returns the Well-Known Text (WKT) representation of the geometry/geography
     # without SRID metadata
     def to_text
