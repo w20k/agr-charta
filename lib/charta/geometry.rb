@@ -1,10 +1,13 @@
 require 'json'
 require 'rgeo/geo_json'
 require 'rgeo/svg' # integrated lib for now
+require 'active_support/core_ext/module/delegation'
 
 module Charta
   # Represents a Geometry with SRID
   class Geometry
+    delegate_missing_to :to_rgeo
+
     def initialize(feature, properties = {})
       self.feature = feature
       @properties = properties
@@ -36,11 +39,6 @@ module Charta
     # Returns the underlaying object managed by Charta: the RGeo feature
     def to_rgeo
       feature
-    end
-
-    # Delegates factory to RGeo
-    def factory
-      to_rgeo.factory
     end
 
     # Returns the Well-Known Text (WKT) representation of the geometry/geography
@@ -339,6 +337,11 @@ module Charta
           projection_proj4: proj4
         )
       end
+    end
+
+    def respond_to_missing?(name, include_private = false)
+      return false if name == :init_with
+      super
     end
   end
 end
