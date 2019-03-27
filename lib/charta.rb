@@ -1,6 +1,7 @@
 # Gathers geomatic calculations
 # Completes RGeo
 require 'rgeo'
+require 'rgeo/proj4'
 require 'charta/geometry'
 require 'charta/geometry_collection'
 require 'charta/point'
