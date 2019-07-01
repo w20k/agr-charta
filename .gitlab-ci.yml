@@ -1,0 +1,13 @@
+stages:
+  - test
+
+test:
+  image: registry.gitlab.com/ekylibre/docker-base-images/ruby2.3:master
+  before_script:
+    - bundle install --path vendor/bundle
+  cache:
+    key: bundle
+    paths:
+      - vendor/bundle
+  script:
+    - bundle exec rake test
