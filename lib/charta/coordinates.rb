@@ -20,7 +20,7 @@ module Charta
 
       def normalize_4326_geometry(json)
         map_coordinates json do |(x, y)|
-          [((x + 180) % 360) - 180, ((y + 90) % 180) - 90]
+          [((x + 180.to_d) % 360.to_d) - 180.to_d, ((y + 90.to_d) % 180.to_d) - 90.to_d]
         end
       end
 

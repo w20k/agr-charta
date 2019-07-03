@@ -1,5 +1,7 @@
 # Gathers geomatic calculations
 # Completes RGeo
+require 'bigdecimal'
+require 'bigdecimal/util'
 require 'rgeo'
 require 'rgeo/proj4'
 
