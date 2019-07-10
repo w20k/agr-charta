@@ -32,6 +32,25 @@ module Charta
       }
 
       samples << {
+        'type' => 'GeometryCollection',
+        'geometries' => [{
+                           'type' => 'Point',
+                           'coordinates' => [125.6, 10.1]
+                         }, {
+                           'type' => 'LineString',
+                           'coordinates' => [
+                             [102.0, 0.0], [103.0, 1.0], [104.0, 0.0], [105.0, 1.0]
+                           ]
+                         }, {
+                           "type" => "Polygon",
+                           "coordinates" => [
+                             [[100.0, 0.0], [101.0, 0.0], [101.0, 1.0],
+                              [100.0, 1.0], [100.0, 0.0]]
+                           ]
+                         }]
+      }
+
+      samples << {
         'type' => 'LineString',
         'coordinates' => [
           [102.0, 0.0], [103.0, 1.0], [104.0, 0.0], [105.0, 1.0]

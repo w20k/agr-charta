@@ -58,7 +58,7 @@ module Charta
         end
 
         def map_geometry_collection_coordinates(hash, &block)
-          hash.merge 'geometries' => map_geometry_coordinates(hash['geometries'], &block)
+          hash.merge 'geometries' => hash['geometries'].map { |geometry| map_geometry_coordinates(geometry, &block) }
         end
     end
   end
