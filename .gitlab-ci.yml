@@ -4,6 +4,7 @@ stages:
 test:
   image: registry.gitlab.com/ekylibre/docker-base-images/ruby2.3:master
   before_script:
+    - gem install bundler
     - bundle install --path vendor/bundle
   cache:
     key: bundle
