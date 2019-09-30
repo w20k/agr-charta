@@ -258,6 +258,20 @@ module Charta
       { type: 'Feature', properties: properties, geometry: to_json_object }
     end
 
+    def method_missing(name, *args, &block)
+      target = to_rgeo
+      if target.respond_to? name
+        target.send name, *args
+      else
+        raise StandardError.new("Method #{name} does not exist for #{self.class.name}")
+      end
+    end
+
+    def respond_to_missing?(name, include_private = false)
+      return false if name == :init_with
+      super
+    end
+
     class << self
       def srs_database
         @srs_database ||= RGeo::CoordSys::SRSDatabase::Proj4Data.new('epsg', authority: 'EPSG', cache: true)
@@ -338,22 +352,6 @@ module Charta
             projection_proj4: proj4
           )
         end
-
-        def method_missing(name, *args, &block)
-          target = to_rgeo
-          if target.respond_to? name
-            target.send name, *args
-          else
-            raise StandardError.new("Method #{name} does not exist for #{self.class.name}")
-          end
-        end
-
-        def respond_to_missing?(name, include_private = false)
-          return false if name == :init_with
-          return true if to_rgeo.respond_to? name, include_private
-          super
-        end
-
     end
   end
 end
