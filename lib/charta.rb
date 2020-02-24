@@ -1,7 +1,12 @@
 # Gathers geomatic calculations
 # Completes RGeo
+require 'bigdecimal'
+require 'bigdecimal/util'
 require 'rgeo'
 require 'rgeo/proj4'
+
+require 'charta/coordinates'
+require 'charta/ewkt_serializer'
 require 'charta/geometry'
 require 'charta/geometry_collection'
 require 'charta/point'

@@ -9,6 +9,5 @@
 /spec/reports/
 /tmp/
 .byebug_history
-
 /.idea/
 .ruby-version
