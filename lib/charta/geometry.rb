@@ -110,12 +110,24 @@ module Charta
 
     # Returns true if Geometry is a Surface
     def surface?
-      [RGeo::Feature::Polygon, RGeo::Feature::MultiPolygon].include? feature.geometry_type
+      if collection?
+        feature.any? { |geometry| Charta.new_geometry(geometry).surface? }
+      else
+        [RGeo::Feature::Polygon, RGeo::Feature::MultiPolygon].include? feature.geometry_type
+      end
     end
 
     # Returns area in unit corresponding to the SRS
     def area
-      surface? ? feature.area : 0
+      if surface?
+        if collection?
+          feature.sum { |geometry| Charta.new_geometry(geometry).area }
+        else
+          feature.area
+        end
+      else
+        0
+      end
     end
 
     # Returns true if this Geometry is an empty geometrycollection, polygon,
@@ -143,10 +155,16 @@ module Charta
 
     def convert_to(new_type)
       case new_type
-      when type then self
-      when :multi_point then flatten_multi(:point)
-      when :multi_line_string then flatten_multi(:line_string)
-      when :multi_polygon then flatten_multi(:polygon)
+        when type then
+          self
+        when :multi_point then
+          flatten_multi(:point)
+        when :multi_line_string then
+          flatten_multi(:line_string)
+        when :multi_polygon then
+          flatten_multi(:polygon)
+        else
+          self
       end
     end
 
@@ -203,6 +221,11 @@ module Charta
     def intersection(other)
       other_geometry = Charta.new_geometry(other).transform(srid)
       feature.intersection(other_geometry.feature)
+    end
+
+    def intersects?(other)
+      other_geometry = Charta.new_geometry(other).transform(srid)
+      feature.intersects?(other_geometry.feature)
     end
 
     def difference(other)
