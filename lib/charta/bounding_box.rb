@@ -24,5 +24,9 @@ module Charta
     def to_a
       [[@y_min, @x_min], [@y_max, @x_max]]
     end
+
+    def to_bbox_string
+      "#{@x_min}, #{@y_min}, #{x_max}, #{y_max}"
+    end
   end
 end
