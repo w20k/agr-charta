@@ -8,5 +8,10 @@ module Charta
       end
       @exterior_ring
     end
+
+    def distance(point)
+      polygon_centroid = Charta.new_point(*centroid, 4326)
+      polygon_centroid.distance(point)
+    end
   end
 end
