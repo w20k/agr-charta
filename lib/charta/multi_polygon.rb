@@ -15,7 +15,7 @@ module Charta
 
     # Extract polygons ordered by 'PointOnSurface' position
     def polygons
-      @polygons ||= feature._elements.map do |polygon|
+      @polygons ||= feature.elements.map do |polygon|
         Polygon.new(polygon)
       end || []
     end
