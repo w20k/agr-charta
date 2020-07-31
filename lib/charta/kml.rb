@@ -22,7 +22,9 @@ module Charta
     end
 
     def to_ewkt
-      "SRID=#{@srid};" + self.class.document_to_ewkt(@kml)
+      srid_part = @srid.nil? ? '' : "SRID=#{@srid};"
+
+      srid_part + self.class.document_to_ewkt(@kml)
     end
 
     def valid?
@@ -55,6 +57,7 @@ module Charta
           end.compact.join(', ')
         end.compact.join(', ') + ')'
       end
+
       alias geometry_collection_to_ewkt document_to_ewkt
 
       def feature_to_ewkt(kml)

@@ -5,6 +5,7 @@ require 'bigdecimal/util'
 require 'rgeo'
 require 'rgeo/proj4'
 
+require 'charta/factory'
 require 'charta/coordinates'
 require 'charta/ewkt_serializer'
 require 'charta/geometry'
@@ -31,75 +32,25 @@ module Charta
   }.freeze
 
   class << self
+    def default_feature_factory=(factory)
+      @default_feature_factory = factory
+      @geometry_factory = nil
+    end
+
+    def default_feature_factory
+      @default_feature_factory || (self.default_feature_factory = Factory::SimpleFeatureFactory.build)
+    end
+
+    def geometry_factory
+      @geometry_factory ||= Factory::SimpleGeometryFactory.new(feature_factory: default_feature_factory)
+    end
+
     def new_feature(coordinates, srs = nil, format = nil, _flatten_collection = true, _options = {})
-      geom_ewkt = nil
-      if coordinates.is_a?(RGeo::Feature::Instance)
-        return Geometry.feature(coordinates)
-      elsif coordinates.is_a?(::Charta::Geometry)
-        return coordinates
-      elsif coordinates.to_s =~ /\A[[:space:]]*\z/
-        geom_ewkt = empty_geometry(srs).to_ewkt
-      elsif coordinates.is_a?(Hash) || (coordinates.is_a?(String) && ::Charta::GeoJSON.valid?(coordinates)) # GeoJSON
-        srid = srs ? find_srid(srs) : :WGS84
-        geom_ewkt = ::Charta::GeoJSON.new(coordinates, srid).to_ewkt
-      elsif coordinates.is_a?(String)
-        geom_ewkt = if coordinates =~ /\A[A-F0-9]+\z/ # WKB
-                      if srs && srid = find_srid(srs)
-                        generate_ewkt RGeo::Geos.factory(srid: srid).parse_wkb(coordinates)
-                      else
-                        generate_ewkt Geometry.factory.parse_wkb(coordinates)
-                      end
-                    elsif format == 'gml' && ::Charta::GML.valid?(coordinates)
-                      # required format 'cause kml geometries return empty instead of failing
-                      ::Charta::GML.new(coordinates, srid).to_ewkt
-                    elsif format == 'kml' && ::Charta::KML.valid?(coordinates)
-                      ::Charta::KML.new(coordinates).to_ewkt
-                    elsif coordinates =~ /^SRID\=\d+\;/i
-                      if feature = Geometry.feature(coordinates)
-                        generate_ewkt feature
-                      else
-                        Charta::GeometryCollection.empty.feature
-                      end
-                    else # WKT expected
-                      if srs && srid = find_srid(srs)
-                        begin
-                          f = RGeo::Geos.factory(srid: srid).parse_wkt(coordinates)
-                        rescue RGeo::Error::ParseError => e
-                          raise "Invalid EWKT (#{e.message}): #{coordinates}"
-                        end
-                        generate_ewkt f
-                      else
-                        generate_ewkt Geometry.feature(coordinates)
-                      end
-                    end
-      else # Default for RGeo
-        geom_ewkt = generate_ewkt coordinates
-      end
-      if geom_ewkt.to_s =~ /\A[[:space:]]*\z/
-        raise ArgumentError, "Invalid data: coordinates=#{coordinates.inspect}, srid=#{srid.inspect}"
-      end
-      Geometry.feature(geom_ewkt)
+      default_feature_factory.new_feature(coordinates, srs: srs, format: format)
     end
 
     def new_geometry(coordinates, srs = nil, format = nil, _flatten_collection = true, _options = {})
-      return coordinates if coordinates.is_a?(::Charta::Geometry)
-      feature = Charta.new_feature(coordinates, srs, format, _flatten_collection, _options)
-      type = feature.geometry_type
-      geom = case type
-             when RGeo::Feature::Point then
-               Point.new(feature)
-             when RGeo::Feature::LineString then
-               LineString.new(feature)
-             when RGeo::Feature::Polygon then
-               Polygon.new(feature)
-             when RGeo::Feature::MultiPolygon then
-               MultiPolygon.new(feature)
-             when RGeo::Feature::GeometryCollection then
-               GeometryCollection.new(feature)
-             else
-               Geometry.new(feature)
-             end
-      geom
+      geometry_factory.new_geometry(coordinates, srs: srs, format: format)
     end
 
     def new_point(lat, lon, srid = 4326)
@@ -116,7 +67,7 @@ module Charta
     end
 
     def empty_geometry(srid = :WGS84)
-      GeometryCollection.empty(srid)
+      geometry_factory.empty_geometry(srid)
     end
 
     def generate_ewkt(feature)
@@ -143,17 +94,9 @@ module Charta
     end
 
     # Check and returns the SRID matching with srname or SRID.
+    # @deprecated
     def find_srid(srname_or_srid)
-      if srname_or_srid.to_s =~ /\Aurn:ogc:def:crs:.*\z/
-        x = srname_or_srid.split(':').last.upcase.to_sym
-        SRS[x] || x
-      elsif srname_or_srid.to_s =~ /\AEPSG::?(\d{4,5})\z/
-        srname_or_srid.split(':').last
-      elsif srname_or_srid.to_s =~ /\A\d+\z/
-        srname_or_srid.to_i
-      else
-        SRS[srname_or_srid] || srname_or_srid
-      end
+      Factory::SridProvider.build.find(srname_or_srid)
     end
 
     def from(format, data)
