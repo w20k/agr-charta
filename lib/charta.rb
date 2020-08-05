@@ -4,20 +4,15 @@ require 'bigdecimal'
 require 'bigdecimal/util'
 require 'rgeo'
 require 'rgeo/proj4'
+require 'zeitwerk'
 
-require 'charta/factory'
-require 'charta/coordinates'
-require 'charta/ewkt_serializer'
-require 'charta/geometry'
-require 'charta/geometry_collection'
-require 'charta/point'
-require 'charta/line_string'
-require 'charta/polygon'
-require 'charta/multi_polygon'
-require 'charta/bounding_box'
-require 'charta/geo_json'
-require 'charta/gml'
-require 'charta/kml'
+loader = Zeitwerk::Loader.for_gem
+loader.inflector.inflect(
+  'geo_json' => 'GeoJSON',
+  'gml' => 'GML',
+  'kml' => 'KML'
+)
+loader.setup
 
 unless RGeo::CoordSys::Proj4.supported?
   puts "Proj4 is not supported. Some actions won't work"
