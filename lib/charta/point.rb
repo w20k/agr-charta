@@ -12,7 +12,8 @@ module Charta
     alias latitude y
 
     def distance(point)
-      raise ArgumentError, "wrong type: Charta::Point required" if point.class.name != "Charta::Point"
+      raise ArgumentError.new('wrong type: Charta::Point required') if point.class.name != 'Charta::Point'
+
       to_rgeo.distance(point.to_rgeo)
     end
   end

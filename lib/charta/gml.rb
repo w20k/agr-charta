@@ -83,6 +83,7 @@ module Charta
           'GEOMETRYCOLLECTION(' + gml.css("#{GML_PREFIX}|featureMember").collect do |feature|
             TAGS.collect do |tag|
               next if feature.css("#{GML_PREFIX}|#{tag}").empty?
+
               feature.css("#{GML_PREFIX}|#{tag}").collect do |fragment|
                 object_to_ewkt(fragment, srid)
               end.compact.join(', ')
@@ -101,6 +102,7 @@ module Charta
 
         wkt = 'POLYGON(' + %w[outerBoundaryIs innerBoundaryIs].collect do |boundary|
           next if gml.css("#{GML_PREFIX}|#{boundary}").empty?
+
           gml.css("#{GML_PREFIX}|#{boundary}").collect do |hole|
             '(' + hole.css("#{GML_PREFIX}|coordinates").collect { |coords| coords.content.split(/\r\n|\n| /) }.flatten.reject(&:empty?).collect { |c| c.split ',' }.collect { |dimension| %(#{dimension.first} #{dimension[1]}) }.join(', ') + ')'
           end.join(', ')
@@ -115,6 +117,7 @@ module Charta
 
       def point_to_ewkt(gml, srid)
         return 'POINT EMPTY' if gml.css("#{GML_PREFIX}|coordinates").nil?
+
         wkt = 'POINT(' + gml.css("#{GML_PREFIX}|coordinates").collect { |coords| coords.content.split ',' }.flatten.join(' ') + ')'
 
         unless gml['srsName'].nil? || Charta.find_srid(gml['srsName']).to_s == srid.to_s

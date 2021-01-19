@@ -32,7 +32,7 @@ module Charta
         # @return [String] ewkt representation of value
         def transform(value, srid: nil, format: nil)
           transformer = transformers.detect { |t| t.handles?(value, format: format) }
-          raise TransformationError, "Not handled" if transformer.nil?
+          raise TransformationError.new('Not handled') if transformer.nil?
 
           transformer.transform(value, srid: srid, format: format)
         end

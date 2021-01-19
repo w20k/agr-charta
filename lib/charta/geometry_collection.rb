@@ -7,8 +7,8 @@ module Charta
         feature = Charta.new_feature('GEOMETRYCOLLECTION EMPTY', srid)
         new(feature)
       end
-    end 
-    
+    end
+
     def to_json_feature_collection(collection_properties = [])
       features = feature.each.with_index.collect do |f, i|
         properties = {}
