@@ -7,7 +7,7 @@ module Charta
       # @return [RGeo::Feature::Instance]
       def from_ewkt(ewkt)
         if ewkt.to_s =~ /\A[[:space:]]*\z/
-          raise ArgumentError, "Invalid data: #{ewkt.inspect}"
+          raise ArgumentError.new("Invalid data: #{ewkt.inspect}")
         end
 
         Geometry.feature(ewkt)

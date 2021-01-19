@@ -32,6 +32,7 @@ module Charta
       @geometry_factory = nil
     end
 
+    # @deprecated This is deprecated and will be removed in 0.4
     def default_feature_factory
       @default_feature_factory || (self.default_feature_factory = Factory::SimpleFeatureFactory.build)
     end
@@ -40,6 +41,7 @@ module Charta
       @geometry_factory ||= Factory::SimpleGeometryFactory.new(feature_factory: default_feature_factory)
     end
 
+    # @deprecated This is deprecated and will be removed in 0.4
     def new_feature(coordinates, srs = nil, format = nil, _flatten_collection = true, _options = {})
       default_feature_factory.new_feature(coordinates, srs: srs, format: format)
     end
@@ -57,7 +59,13 @@ module Charta
       options[:srid] ||= new_geometry(points.first).srid if points.any?
       options[:srid] ||= 4326
 
-      ewkt = "SRID=#{options[:srid]};LINESTRING(" + points.map { |wkt| p = new_geometry(wkt); "#{p.x} #{p.y}" }.join(', ') + ')'
+      points_coordinates = points.map do |wkt|
+        p = new_geometry(wkt)
+
+        "#{p.x} #{p.y}"
+      end
+
+      ewkt = "SRID=#{options[:srid]};LINESTRING(#{points_coordinates.join(', ')})"
       new_geometry(ewkt)
     end
 
@@ -98,6 +106,7 @@ module Charta
       unless respond_to?("from_#{format}")
         raise "Unknown format: #{format.inspect}"
       end
+
       send("from_#{format}", data)
     end
 

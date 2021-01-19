@@ -1,0 +1,15 @@
+# This file contains configuration specific for this repository that are different from the default Ekylibre style guide
+
+inherit_from: .rubocop_ekylibre.yml
+
+AllCops:
+  TargetRubyVersion: 2.6
+  Exclude:
+    - 'bin/**/*'
+
+Naming/MethodName:
+  Exclude:
+    - 'test/**/*'
+
+Style/Documentation:
+  Enabled: false

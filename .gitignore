@@ -11,3 +11,4 @@
 .byebug_history
 /.idea/
 .ruby-version
+/*.gem

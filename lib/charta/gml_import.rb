@@ -63,30 +63,30 @@ class GmlImport
 
   private
 
-  def featurize(node)
-    if node.element? && node.xpath('.//gml:Polygon')
-      geojson_feature = {}
+    def featurize(node)
+      if node.element? && node.xpath('.//gml:Polygon')
+        geojson_feature = {}
 
-      geometry = node.xpath('.//gml:Polygon')
-      geometry.first['srsName'] = 'EPSG:2154'
+        geometry = node.xpath('.//gml:Polygon')
+        geometry.first['srsName'] = 'EPSG:2154'
 
-      if ::Charta::GML.valid?(geometry)
+        if ::Charta::GML.valid?(geometry)
 
-        # properties
-        id = (Time.zone.now.to_i.to_s + Time.zone.now.usec.to_s)
+          # properties
+          id = (Time.zone.now.to_i.to_s + Time.zone.now.usec.to_s)
 
-        geojson_feature = {
-          type: 'Feature',
-          properties: {
-            internal_id: id
-          }.reject { |_, v| v.nil? },
-          geometry: ::Charta.new_geometry(geometry.to_xml, nil, 'gml').transform(:WGS84).to_geojson
-        }.reject { |_, v| v.nil? }
+          geojson_feature = {
+            type: 'Feature',
+            properties: {
+              internal_id: id
+            }.reject { |_, v| v.nil? },
+            geometry: ::Charta.new_geometry(geometry.to_xml, nil, 'gml').transform(:WGS84).to_geojson
+          }.reject { |_, v| v.nil? }
 
-        return geojson_feature
-      else
-        return false
+          return geojson_feature
+        else
+          return false
+        end
       end
     end
-  end
 end

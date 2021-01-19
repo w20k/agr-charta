@@ -11,6 +11,7 @@ module Charta
 
         def feature_collection_to_ewkt(hash)
           return 'GEOMETRYCOLLECTION EMPTY' if hash['features'].nil?
+
           'GEOMETRYCOLLECTION(' + hash['features'].collect do |feature|
             object_to_ewkt(feature)
           end.join(', ') + ')'
@@ -18,6 +19,7 @@ module Charta
 
         def geometry_collection_to_ewkt(hash)
           return 'GEOMETRYCOLLECTION EMPTY' if hash['geometries'].nil?
+
           'GEOMETRYCOLLECTION(' + hash['geometries'].collect do |feature|
             object_to_ewkt(feature)
           end.join(', ') + ')'
@@ -29,11 +31,13 @@ module Charta
 
         def point_to_ewkt(hash)
           return 'POINT EMPTY' if hash['coordinates'].nil?
+
           'POINT(' + hash['coordinates'].join(' ') + ')'
         end
 
         def line_string_to_ewkt(hash)
           return 'LINESTRING EMPTY' if hash['coordinates'].nil?
+
           'LINESTRING(' + hash['coordinates'].collect do |point|
             point.join(' ')
           end.join(', ') + ')'
@@ -41,6 +45,7 @@ module Charta
 
         def polygon_to_ewkt(hash)
           return 'POLYGON EMPTY' if hash['coordinates'].nil?
+
           'POLYGON(' + hash['coordinates'].collect do |hole|
             '(' + hole.collect do |point|
               point.join(' ')
@@ -50,6 +55,7 @@ module Charta
 
         def multi_point_to_ewkt(hash)
           return 'MULTIPOINT EMPTY' if hash['coordinates'].nil?
+
           'MULTIPOINT(' + hash['coordinates'].collect do |point|
             '(' + point.join(' ') + ')'
           end.join(', ') + ')'
@@ -57,6 +63,7 @@ module Charta
 
         def multi_line_string_to_ewkt(hash)
           return 'MULTILINESTRING EMPTY' if hash['coordinates'].nil?
+
           'MULTILINESTRING(' + hash['coordinates'].collect do |line|
             '(' + line.collect do |point|
               point.join(' ')
@@ -66,6 +73,7 @@ module Charta
 
         def multipolygon_to_ewkt(hash)
           return 'MULTIPOLYGON EMPTY' if hash['coordinates'].nil?
+
           'MULTIPOLYGON(' + hash['coordinates'].collect do |polygon|
             '(' + polygon.collect do |hole|
               '(' + hole.collect do |point|
@@ -78,6 +86,7 @@ module Charta
         # for PostGIS ST_ASGeoJSON compatibility
         def multi_polygon_to_ewkt(hash)
           return 'MULTIPOLYGON EMPTY' if hash['coordinates'].nil?
+
           'MULTIPOLYGON(' + hash['coordinates'].collect do |polygon|
             '(' + polygon.collect do |hole|
               '(' + hole.collect do |point|

@@ -48,9 +48,11 @@ module Charta
 
       def document_to_ewkt(kml)
         return 'GEOMETRYCOLLECTION EMPTY' if kml.css('Document').nil?
+
         'GEOMETRYCOLLECTION(' + kml.css('Placemark').collect do |placemark|
           TAGS.collect do |tag|
             next if placemark.css(tag).empty?
+
             placemark.css(tag).collect do |fragment|
               object_to_ewkt(fragment)
             end.compact.join(', ')
@@ -66,6 +68,7 @@ module Charta
 
       def point_to_ewkt(kml)
         return 'POINT EMPTY' if kml.css('coordinates').nil?
+
         'POINT(' + kml.css('coordinates').collect { |coords| coords.content.split ',' }.flatten.join(' ') + ')'
       end
 

@@ -97,6 +97,7 @@ module Charta
       other_geometry = Charta.new_geometry(other).transform(srid)
       return true if empty? && other_geometry.empty?
       return inspect == other_geometry.inspect if collection? && other_geometry.collection?
+
       feature.equals?(other_geometry.feature)
     end
 
@@ -105,6 +106,7 @@ module Charta
       other_geometry = Charta.new_geometry(other).transform(srid)
       return true if empty? && other_geometry.empty?
       return inspect == other_geometry.inspect if collection? && other_geometry.collection?
+
       !feature.equals?(other_geometry.feature)
     end
 
@@ -142,6 +144,7 @@ module Charta
     # of mass of the geometry as a POINT.
     def centroid
       return nil unless surface? && !feature.is_empty?
+
       point = feature.centroid
       [point.y, point.x]
     end
@@ -149,22 +152,23 @@ module Charta
     # Returns a POINT guaranteed to lie on the surface.
     def point_on_surface
       return nil unless surface?
+
       point = feature.point_on_surface
       [point.y, point.x]
     end
 
     def convert_to(new_type)
       case new_type
-        when type then
-          self
-        when :multi_point then
-          flatten_multi(:point)
-        when :multi_line_string then
-          flatten_multi(:line_string)
-        when :multi_polygon then
-          flatten_multi(:polygon)
-        else
-          self
+      when type
+        self
+      when :multi_point
+        flatten_multi(:point)
+      when :multi_line_string
+        flatten_multi(:line_string)
+      when :multi_polygon
+        flatten_multi(:polygon)
+      else
+        self
       end
     end
 
@@ -192,10 +196,12 @@ module Charta
     def transform(new_srid)
       return self if new_srid == srid
       raise 'Proj is not supported. Cannot tranform' unless RGeo::CoordSys::Proj4.supported?
+
       new_srid = Charta::SRS[new_srid] || new_srid
       database = self.class.srs_database
       new_proj_entry = database.get(new_srid)
       raise "Cannot find proj for SRID: #{new_srid}" if new_proj_entry.nil?
+
       new_feature = RGeo::CoordSys::Proj4.transform(
         database.get(srid).proj4,
         feature,
@@ -264,7 +270,7 @@ module Charta
           @feature = ::Charta::Geometry.from_ewkt(@ewkt)
           @properties = @options.dup if @options
         else
-          raise StandardError, 'Invalid geometry (no feature, no EWKT)'
+          raise StandardError.new('Invalid geometry (no feature, no EWKT)')
         end
       end
       @feature.dup
@@ -273,7 +279,8 @@ module Charta
     alias to_rgeo feature
 
     def feature=(new_feature)
-      raise ArgumentError, "Feature can't be nil" if new_feature.nil?
+      raise ArgumentError.new("Feature can't be nil") if new_feature.nil?
+
       @feature = new_feature
     end
 
@@ -292,6 +299,7 @@ module Charta
 
     def respond_to_missing?(name, include_private = false)
       return false if name == :init_with
+
       super
     end
 
@@ -302,11 +310,13 @@ module Charta
 
       def factory(srid = 4326)
         return projected_factory(srid) if srid.to_i == 4326
+
         geos_factory(srid)
       end
 
       def feature(ewkt_or_rgeo)
         return from_rgeo(ewkt_or_rgeo) if ewkt_or_rgeo.is_a? RGeo::Feature::Instance
+
         from_ewkt(ewkt_or_rgeo)
       end
 

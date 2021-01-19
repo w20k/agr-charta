@@ -9,12 +9,12 @@ module Charta
 
       def map_coordinates(hash, &block)
         case hash['type']
-          when 'FeatureCollection'
-            map_feature_collection_coordinates hash, &block
-          when 'Feature'
-            map_feature_coordinates hash, &block
-          else
-            map_geometry_coordinates hash, &block
+        when 'FeatureCollection'
+          map_feature_collection_coordinates hash, &block
+        when 'Feature'
+          map_feature_coordinates hash, &block
+        else
+          map_geometry_coordinates hash, &block
         end
       end
 
@@ -41,16 +41,16 @@ module Charta
             coordinates = hash['coordinates']
             mapped =
               case hash['type']
-                when 'Point' then
-                  block.call coordinates
-                when 'MultiPoint', 'LineString'
-                  coordinates.map(&block)
-                when 'MultiLineString', 'Polygon'
-                  coordinates.map { |line| line.map(&block) }
-                when 'MultiPolygon'
-                  coordinates.map { |poly| poly.map { |line| line.map(&block) } }
-                else
-                  raise StandardError, "Cannot handle: #{hash['type'].inspect}. In #{hash.inspect}"
+              when 'Point'
+                block.call coordinates
+              when 'MultiPoint', 'LineString'
+                coordinates.map(&block)
+              when 'MultiLineString', 'Polygon'
+                coordinates.map { |line| line.map(&block) }
+              when 'MultiPolygon'
+                coordinates.map { |poly| poly.map { |line| line.map(&block) } }
+              else
+                raise StandardError.new("Cannot handle: #{hash['type'].inspect}. In #{hash.inspect}")
               end
 
             hash.merge 'coordinates' => mapped

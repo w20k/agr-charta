@@ -1,5 +1,23 @@
+include:
+  - project: ekylibre/tools/pipeline-utilities
+    ref: 1.0.0
+    file: /rubygems/rubygems.yaml
+
 stages:
+  - lint
   - test
+  - release
+
+cache:
+  key: ${CI_JOB_NAME}
+  paths:
+    - vendor/ruby
+
+lint:
+  stage: lint
+  image: registry.gitlab.com/ekylibre/docker-base-images/tools/rubocop:feature-image-tools
+  script:
+    - rubocop --parallel
 
 test:
   image: registry.gitlab.com/ekylibre/docker-base-images/ruby2.6:1
@@ -12,3 +30,9 @@ test:
       - vendor/bundle
   script:
     - bundle exec rake test
+
+rubygems:
+  extends: .rubygems-automatic
+  stage: release
+  variables:
+    GEMSPEC: charta

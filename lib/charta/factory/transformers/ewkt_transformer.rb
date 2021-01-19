@@ -12,7 +12,7 @@ module Charta
         # @param [String, Hash] value
         # @return [String] ewkt representation of value
         def transform(value, srid: nil, format: nil)
-          raise StandardError, "Not implemented"
+          raise StandardError.new('Not implemented')
         end
       end
     end
