@@ -91,6 +91,7 @@ module Charta
           end.compact.join(', ') + ')'
         end
       end
+
       alias geometry_collection_to_ewkt document_to_ewkt
 
       def transform(data, from_srid, to_srid)
@@ -104,7 +105,7 @@ module Charta
           next if gml.css("#{GML_PREFIX}|#{boundary}").empty?
 
           gml.css("#{GML_PREFIX}|#{boundary}").collect do |hole|
-            '(' + hole.css("#{GML_PREFIX}|coordinates").collect { |coords| coords.content.split(/\r\n|\n| /) }.flatten.reject(&:empty?).collect { |c| c.split ',' }.collect { |dimension| %(#{dimension.first} #{dimension[1]}) }.join(', ') + ')'
+            "(#{transform_coordinates(hole)})"
           end.join(', ')
         end.compact.join(', ') + ')'
 
@@ -130,7 +131,7 @@ module Charta
       def line_string_to_ewkt(gml, srid)
         return 'LINESTRING EMPTY' if gml.css("#{GML_PREFIX}|coordinates").nil?
 
-        wkt = 'LINESTRING(' + gml.css("#{GML_PREFIX}|coordinates").collect { |coords| coords.content.split(/\r\n|\n| /) }.flatten.reject(&:empty?).collect { |c| c.split ',' }.collect { |dimension| %(#{dimension.first} #{dimension[1]}) }.join(', ') + ')'
+        wkt = "LINESTRING(#{transform_coordinates(gml)})"
 
         unless gml['srsName'].nil? || Charta.find_srid(gml['srsName']).to_s == srid.to_s
           wkt = transform(wkt, Charta.find_srid(gml['srsName']), srid)
@@ -138,6 +139,18 @@ module Charta
 
         wkt
       end
+
+      private
+
+        def transform_coordinates(coordinates)
+          coordinates.css("#{GML_PREFIX}|coordinates")
+                     .collect { |coords| coords.content.split(/\r\n|\n| /) }
+                     .flatten
+                     .reject(&:empty?)
+                     .collect { |c| c.split ',' }
+                     .collect { |dimension| %(#{dimension.first} #{dimension[1]}) }
+                     .join(', ')
+        end
     end
   end
 end

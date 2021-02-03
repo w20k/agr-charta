@@ -12,3 +12,6 @@
 /.idea/
 .ruby-version
 /*.gem
+
+# Remote rubocop configurations
+/.rubocop-*

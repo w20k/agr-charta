@@ -1,6 +1,6 @@
 # This file contains configuration specific for this repository that are different from the default Ekylibre style guide
 
-inherit_from: .rubocop_ekylibre.yml
+inherit_from: https://gitlab.com/ekylibre/tools/rubocop/-/raw/0.1.0/.rubocop.yml
 
 AllCops:
   TargetRubyVersion: 2.6
@@ -13,3 +13,7 @@ Naming/MethodName:
 
 Style/Documentation:
   Enabled: false
+
+Layout/LineLength:
+  Exclude:
+    - 'test/**/*'
