@@ -75,7 +75,7 @@ module Charta
       def line_string_to_ewkt(kml)
         return 'LINESTRING EMPTY' if kml.css('coordinates').nil?
 
-        'LINESTRING(' + kml.css('coordinates').collect { |coords| coords.content.split(/\r\n|\n| /) }.flatten.reject(&:empty?).collect { |c| c.split ',' }.collect { |dimension| %(#{dimension.first} #{dimension[1]}) }.join(', ') + ')'
+        "LINESTRING(#{transform_coordinates(kml)})"
       end
 
       def polygon_to_ewkt(kml)
@@ -85,7 +85,7 @@ module Charta
           next if kml.css(boundary).empty?
 
           kml.css(boundary).collect do |hole|
-            '(' + hole.css('coordinates').collect { |coords| coords.content.split(/\r\n|\n| /) }.flatten.reject(&:empty?).collect { |c| c.split ',' }.collect { |dimension| %(#{dimension.first} #{dimension[1]}) }.join(', ') + ')'
+            "(#{transform_coordinates(hole)})"
           end.join(', ')
         end.compact.join(', ') + ')'
       end
@@ -93,6 +93,18 @@ module Charta
       def multigeometry_to_ewkt(_kml)
         raise :not_implemented
       end
+
+      private
+
+        def transform_coordinates(coordinates)
+          coordinates.css('coordinates')
+                     .collect { |coords| coords.content.split(/\r\n|\n| /) }
+                     .flatten
+                     .reject(&:empty?)
+                     .collect { |c| c.split ',' }
+                     .collect { |dimension| %(#{dimension.first} #{dimension[1]}) }
+                     .join(', ')
+        end
     end
   end
 end

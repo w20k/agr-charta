@@ -48,7 +48,10 @@ module Charta
         Coordinates.flatten hash
       end
 
-      %i[object_to_ewkt feature_collection_to_ewkt geometry_collection_to_ewkt feature_to_ewkt point_to_ewkt line_string_to_ewkt polygon_to_ewkt multi_point_to_ewkt multi_line_string_to_ewkt multipolygon_to_ewkt multi_polygon_to_ewkt].each do |m|
+      %i[
+        object_to_ewkt feature_collection_to_ewkt geometry_collection_to_ewkt feature_to_ewkt point_to_ewkt line_string_to_ewkt
+        polygon_to_ewkt multi_point_to_ewkt multi_line_string_to_ewkt multipolygon_to_ewkt multi_polygon_to_ewkt
+      ].each do |m|
         define_method m do |*args|
           EwktSerializer.send m, *args
         end
