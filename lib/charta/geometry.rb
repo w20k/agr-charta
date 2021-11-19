@@ -2,6 +2,7 @@ require 'json'
 require 'rgeo/geo_json'
 require 'rgeo/svg' # integrated lib for now
 require 'active_support/core_ext/module/delegation'
+require 'victor' # for SVG
 
 module Charta
   # Represents a Geometry with SRID
@@ -63,16 +64,36 @@ module Charta
 
     alias to_ewkb to_binary
 
-    # Pas bien compris le fonctionnement
+    # Generate SVG from geometry
+    # @param [Hash] options , the options for SVG object.
+    # @option options [Hash] :mode could be :stroke or :fill
+    # @option options [Hash] :color could be "orange", "red", "blue" or HTML color "#14TF15"
+    # @option options [Hash] :fill_opacity could be '0' to '100'
+    # @option options [Hash] :stroke_linecap could be 'round', 'square', 'butt'
+    # @option options [Hash] :stroke_linejoin default 'round'
+    # @option options [Hash] :stroke_width default '5%'
+    # @note more informations on https://developer.mozilla.org/fr/docs/Web/SVG/Tutorial/Fills_and_Strokes
+    # @return [String] the SVG image
     def to_svg(options = {})
-      svg = '<svg xmlns="http://www.w3.org/2000/svg" version="1.1"'
-      { preserve_aspect_ratio: 'xMidYMid meet',
-        width: 180, height: 180,
-        view_box: bounding_box.svg_view_box.join(' ') }.merge(options).each do |attr, value|
-        svg << " #{Charta.camelcase(attr.to_s, :lower)}=\"#{value}\""
+      # set default options if not present
+      options[:mode] ||= :stroke
+      options[:color] ||= 'black'
+      options[:fill_opacity] ||= '100' # 0 to 100
+      options[:stroke_linecap] ||= 'butt' # round, square, butt
+      options[:stroke_linejoin] ||= 'round' #
+      options[:stroke_width] ||= '5%'
+
+      svg = Victor::SVG.new template: :html
+      svg.setup width: 180, height: 180, viewBox: bounding_box.svg_view_box.join(' ')
+      # return a stroke SVG with options
+      if options[:mode] == :stroke
+        svg.path d: to_svg_path, fill: 'none', stroke: options[:color], stroke_linecap: options[:stroke_linecap],
+stroke_linejoin: options[:stroke_linejoin], stroke_width: options[:stroke_width]
+      # return a fill SVG with options
+      elsif options[:mode] == :fill
+        svg.path d: to_svg_path, fill: options[:color], fill_opacity: options[:fill_opacity]
       end
-      svg << "><path d=\"#{to_svg_path}\"/></svg>"
-      svg
+      svg.render
     end
 
     # Return the geometry as Scalar Vector Graphics (SVG) path data.
