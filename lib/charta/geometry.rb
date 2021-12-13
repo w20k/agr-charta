@@ -329,10 +329,15 @@ stroke_linejoin: options[:stroke_linejoin], stroke_width: options[:stroke_width]
         @srs_database ||= RGeo::CoordSys::SRSDatabase::Proj4Data.new('epsg', authority: 'EPSG', cache: true)
       end
 
-      def factory(srid = 4326)
-        return projected_factory(srid) if srid.to_i == 4326
+      def factory(srid = 4326, uses_lenient_assertions = true)
+        if srid.to_i == 4326
+          factory = projected_factory(srid)
+          factory.set_property(:uses_lenient_assertions, true) if uses_lenient_assertions && factory.respond_to?(:set_property)
+        else
+          factory = geos_factory(srid)
+        end
 
-        geos_factory(srid)
+        factory
       end
 
       def feature(ewkt_or_rgeo)
