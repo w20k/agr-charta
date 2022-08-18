@@ -156,7 +156,7 @@ stroke_linejoin: options[:stroke_linejoin], stroke_width: options[:stroke_width]
     # Returns true if this Geometry is an empty geometrycollection, polygon,
     # point etc.
     def empty?
-      feature.is_empty?
+      feature.empty?
     end
 
     alias blank? empty?
@@ -164,7 +164,7 @@ stroke_linejoin: options[:stroke_linejoin], stroke_width: options[:stroke_width]
     # Computes the geometric center of a geometry, or equivalently, the center
     # of mass of the geometry as a POINT.
     def centroid
-      return nil unless surface? && !feature.is_empty?
+      return nil unless surface? && !feature.empty?
 
       point = feature.centroid
       [point.y, point.x]
