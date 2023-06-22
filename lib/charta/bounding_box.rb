@@ -18,7 +18,7 @@ module Charta
     end
 
     def svg_view_box
-      [x_min, y_min, width, height]
+      [@x_min, -@y_max, width, height]
     end
 
     def to_a

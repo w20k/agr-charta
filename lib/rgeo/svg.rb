@@ -62,7 +62,7 @@ module RGeo
         end
 
         def coordinates(feature)
-          feature.x.to_s + ',' + feature.y.to_s
+          feature.x.to_s + ',' + (-1 * feature.y).to_s
         end
     end
   end
