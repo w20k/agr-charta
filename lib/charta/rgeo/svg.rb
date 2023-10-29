@@ -1,11 +1,12 @@
-module RGeo
-  module SVG
-    class << self
-      def encode(feature)
-        send('encode_' + Charta.underscore(feature.geometry_type.type_name), feature)
-      end
+module Charta
+  module Rgeo
+    module Svg
+      class << self
+        def encode(feature)
+          send('encode_' + Charta.underscore(feature.geometry_type.type_name), feature)
+        end
 
-      protected
+        protected
 
         def encode_point(feature)
           'M' + coordinates(feature)
@@ -64,6 +65,7 @@ module RGeo
         def coordinates(feature)
           feature.x.to_s + ',' + (-1 * feature.y).to_s
         end
+      end
     end
   end
 end

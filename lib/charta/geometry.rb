@@ -1,6 +1,5 @@
 require 'json'
 require 'rgeo/geo_json'
-require 'rgeo/svg' # integrated lib for now
 require 'active_support/core_ext/module/delegation'
 require 'victor' # for SVG
 
@@ -98,7 +97,7 @@ stroke_linejoin: options[:stroke_linejoin], stroke_width: options[:stroke_width]
 
     # Return the geometry as Scalar Vector Graphics (SVG) path data.
     def to_svg_path
-      RGeo::SVG.encode(feature)
+      Charta::Rgeo::Svg.encode(feature)
     end
 
     # Return the geometry as a Geometry Javascript Object Notation (GeoJSON) element.
@@ -223,10 +222,11 @@ stroke_linejoin: options[:stroke_linejoin], stroke_width: options[:stroke_width]
       new_proj_entry = database.get(new_srid)
       raise "Cannot find proj for SRID: #{new_srid}" if new_proj_entry.nil?
 
+      # TODO: fix me, a hack!!!
       new_feature = RGeo::CoordSys::Proj4.transform(
-        database.get(srid).proj4,
+        RGeo::CoordSys::Proj4.new(database.get(srid).proj4.to_s + ' +type=crs'),
         feature,
-        new_proj_entry.proj4,
+        RGeo::CoordSys::Proj4.new(new_proj_entry.proj4 .to_s + ' +type=crs'),
         self.class.factory(new_srid)
       )
       generator = RGeo::WKRep::WKTGenerator.new(tag_format: :ewkt, emit_ewkt_srid: true)
@@ -388,7 +388,7 @@ stroke_linejoin: options[:stroke_linejoin], stroke_width: options[:stroke_width]
         end
 
         def projected_factory(srid)
-          proj4 = '+proj=cea +lon_0=0 +lat_ts=30 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs'
+          proj4 = '+proj=cea +lon_0=0 +lat_ts=30 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs +type=crs'
           RGeo::Geographic.projected_factory(
             srid: srid,
             wkt_generator: {

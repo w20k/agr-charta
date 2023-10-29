@@ -1,67 +1,68 @@
 require 'nokogiri'
 
-class GmlImport
-  def initialize(data)
-    @shapes = nil
-    @xml = data
-  end
-
-  def valid?
-    shapes
-    geometries = as_geojson || {}
-
-    !geometries.empty?
-  end
-
-  def sanitize(xml)
-    xml.to_s.split.join(' ')
-  end
-
-  def shapes(options = {})
-    options[:to] ||= ''
-
-    f = sanitize @xml
-
-    doc = Nokogiri::XML(f) do |config|
-      config.options = Nokogiri::XML::ParseOptions::NOBLANKS
+module Charta
+  class GmlImport
+    def initialize(data)
+      @shapes = nil
+      @xml = data
     end
 
-    @shapes = doc.root
+    def valid?
+      shapes
+      geometries = as_geojson || {}
 
-    if options[:to].equal? :xml
-      @shapes = @shapes.to_xml
-    elsif options[:to].equal? :string
-      @shapes = @shapes.to_s
-    else
-      @shapes
+      !geometries.empty?
     end
-  end
 
-  def as_geojson
-    geojson_features_collection = {}
-    geojson_features = []
+    def sanitize(xml)
+      xml.to_s.split.join(' ')
+    end
 
-    if @shapes.is_a? Nokogiri::XML::Node
+    def shapes(options = {})
+      options[:to] ||= ''
 
-      geojson_features << featurize(@shapes)
+      f = sanitize @xml
 
-    elsif @shapes.is_a? Nokogiri::XML::NodeSet
-
-      @shapes.each do |node|
-        geojson_features << featurize(node)
+      doc = Nokogiri::XML(f) do |config|
+        config.options = Nokogiri::XML::ParseOptions::NOBLANKS
       end
 
+      @shapes = doc.root
+
+      if options[:to].equal? :xml
+        @shapes = @shapes.to_xml
+      elsif options[:to].equal? :string
+        @shapes = @shapes.to_s
+      else
+        @shapes
+      end
     end
 
-    geojson_features_collection = {
-      type: 'FeatureCollection',
-      features: geojson_features
-    }
+    def as_geojson
+      geojson_features_collection = {}
+      geojson_features = []
 
-    geojson_features_collection
-  end
+      if @shapes.is_a? Nokogiri::XML::Node
 
-  private
+        geojson_features << featurize(@shapes)
+
+      elsif @shapes.is_a? Nokogiri::XML::NodeSet
+
+        @shapes.each do |node|
+          geojson_features << featurize(node)
+        end
+
+      end
+
+      geojson_features_collection = {
+        type: 'FeatureCollection',
+        features: geojson_features
+      }
+
+      geojson_features_collection
+    end
+
+    private
 
     def featurize(node)
       if node.element? && node.xpath('.//gml:Polygon')
@@ -89,4 +90,5 @@ class GmlImport
         end
       end
     end
+  end
 end

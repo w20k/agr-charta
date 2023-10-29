@@ -43,7 +43,8 @@ module Charta
         def convert_feature(coordinates, srs: nil, format: nil)
           srid = srs.nil? ? nil : srid_provider.find(srs)
 
-          ewkt_builder.from_ewkt(transformer.transform(coordinates, srid: srid, format: format))
+          transformer_transform = transformer.transform(coordinates, srid: srid, format: format)
+          ewkt_builder.from_ewkt(transformer_transform)
         end
     end
   end
